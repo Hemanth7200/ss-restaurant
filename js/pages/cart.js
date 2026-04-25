@@ -39,10 +39,16 @@ function renderCart() {
         ${cart.length > 0 ? `
           <div class="cart-items">
             ${cart.map(item => {
-              const defaultItem = DEFAULT_MENU_ITEMS.find(d => d.id === item.itemId || d.name === item.name);
-              const itemImage = (defaultItem && (defaultItem.image.startsWith('http') || defaultItem.image.startsWith('assets'))) ? defaultItem.image : item.image;
-              const isUrl = itemImage && (itemImage.startsWith('http') || itemImage.startsWith('/') || itemImage.startsWith('assets'));
-              const gradient = Utils.getFoodGradient(item.image);
+              const menuItem = Store.get('menuItems').find(m => m.id === item.itemId);
+              const fallbackItem = DEFAULT_MENU_ITEMS.find(d => d.id === item.itemId || d.name === item.name);
+              const itemImage = (menuItem && menuItem.image) || item.image || (fallbackItem ? fallbackItem.image : '');
+              const isUrl = itemImage && (
+                itemImage.startsWith('http') ||
+                itemImage.startsWith('/') ||
+                itemImage.startsWith('assets') ||
+                itemImage.startsWith('data:image')
+              );
+              const gradient = Utils.getFoodGradient(itemImage);
               return `
                 <div class="cart-item">
                   <div class="cart-item-img ${isUrl ? 'has-photo' : ''}" style="${isUrl ? '' : `background: ${gradient}; display: flex; align-items: center; justify-content: center; font-size: 24px;`}">

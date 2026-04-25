@@ -4,6 +4,7 @@
 
 function renderAdminDashboard() {
   let chartRange = '7days'; // 7days, 1month, 1year
+  let lastKnownMaxOrderId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o => o.id)) : 0;
 
   function renderDashboardContent(container) {
     const todayOrders = Store.getTodayOrders();
@@ -159,4 +160,29 @@ function renderAdminDashboard() {
   renderAdminLayout('Dashboard', (container) => {
     renderDashboardContent(container);
   });
+
+  // Single realtime notifier for admin dashboard (sound + toast)
+  if (!window._adminRealtimeOrderNotifierBound) {
+    window._adminRealtimeOrderNotifierBound = true;
+
+    Store.subscribe('orders', () => {
+      const orders = Store.get('orders') || [];
+      const maxOrderId = orders.length > 0 ? Math.max(...orders.map(o => o.id)) : 0;
+
+      if (maxOrderId <= lastKnownMaxOrderId) return;
+      lastKnownMaxOrderId = maxOrderId;
+
+      if (Router.currentRoute !== '/admin/dashboard' || !Store.isAdminLoggedIn()) return;
+
+      const newestOrder = orders.find(o => o.id === maxOrderId);
+      if (newestOrder) {
+        Toast.info(`New order #${newestOrder.id} received for Table ${Utils.getTableNumber(newestOrder.tableId)}`);
+      } else {
+        Toast.info('New order received');
+      }
+
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.play().catch(() => {});
+    });
+  }
 }
