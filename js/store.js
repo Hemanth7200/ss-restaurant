@@ -1,7 +1,7 @@
 /* ============================================
    SS Restaurant — Store (State Management)
    Syncs with Supabase when connected,
-   falls back to localStorage when not.
+   falls back to sessionStorage when not.
    ============================================ */
 
 const Store = {
@@ -10,8 +10,8 @@ const Store = {
   _dbLoaded: false,
 
   async init() {
-    // 1. Load from localStorage first (instant)
-    const saved = localStorage.getItem('ss_restaurant_state');
+    // 1. Load from sessionStorage first (instant)
+    const saved = sessionStorage.getItem('ss_restaurant_state');
     if (saved) {
       try {
         this._state = JSON.parse(saved);
@@ -76,7 +76,7 @@ const Store = {
       this._persist();
       console.log('✅ Data loaded from Supabase');
     } catch (e) {
-      console.error('Failed to load from DB, using localStorage:', e);
+      console.error('Failed to load from DB, using sessionStorage:', e);
     }
   },
 
@@ -129,7 +129,7 @@ const Store = {
 
   _persist() {
     try {
-      localStorage.setItem('ss_restaurant_state', JSON.stringify(this._state));
+      sessionStorage.setItem('ss_restaurant_state', JSON.stringify(this._state));
     } catch (e) {
       console.warn('Failed to persist state:', e);
     }
