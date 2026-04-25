@@ -128,14 +128,18 @@ const Store = {
       return;
     }
 
-    // Never trust shared storage for per-tab active session.
+    // Never trust shared storage for per-tab active customer/admin sessions.
     this._state.currentSession = null;
+    this._state.adminAuth = null;
 
     if (sessionRaw) {
       try {
         const sessionState = JSON.parse(sessionRaw);
         if (sessionState && sessionState.currentSession) {
           this._state.currentSession = sessionState.currentSession;
+        }
+        if (sessionState && sessionState.adminAuth) {
+          this._state.adminAuth = sessionState.adminAuth;
         }
       } catch (e) {
         // Ignore corrupted session state for this tab.
@@ -150,6 +154,7 @@ const Store = {
     const sharedState = { ...this._state };
     // Per-tab only, never shared between tabs.
     sharedState.currentSession = null;
+    sharedState.adminAuth = null;
     return sharedState;
   },
 
@@ -173,7 +178,8 @@ const Store = {
     try {
       const sharedSerialized = JSON.stringify(this._getSharedStateSnapshot());
       const sessionSerialized = JSON.stringify({
-        currentSession: this._state.currentSession || null
+        currentSession: this._state.currentSession || null,
+        adminAuth: this._state.adminAuth || null
       });
 
       localStorage.setItem(SHARED_STORE_KEY, sharedSerialized);
@@ -196,9 +202,11 @@ const Store = {
       try {
         const incomingShared = JSON.parse(event.newValue);
         const activeSession = this._state.currentSession || null;
+        const activeAdminAuth = this._state.adminAuth || null;
 
         this._state = incomingShared;
         this._state.currentSession = activeSession;
+        this._state.adminAuth = activeAdminAuth;
         this._ensureDefaults();
         this._notify('orders');
         this._notify('tables');

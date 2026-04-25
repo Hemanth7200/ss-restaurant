@@ -5,11 +5,6 @@
 function renderAdminLogin() {
   const app = document.getElementById('app');
 
-  if (Store.isAdminLoggedIn()) {
-    Router.navigate('/admin/dashboard');
-    return;
-  }
-
   app.innerHTML = `
     <div class="admin-login-page">
       <div class="admin-login-card">

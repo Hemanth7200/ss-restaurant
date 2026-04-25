@@ -6,6 +6,7 @@ function renderAdminOrders() {
   renderAdminLayout('Live Orders', (container) => {
     let filterStatus = 'all';
     let searchQuery = '';
+    let lastRenderSignature = '';
 
     // Build the skeleton ONCE
     container.innerHTML = `
@@ -33,20 +34,40 @@ function renderAdminOrders() {
       updateGrid();
     }, 300));
 
+    async function syncOrdersAndSessions() {
+      if (!DB_ENABLED) return;
+      const [ordersFromDb, sessionsFromDb] = await Promise.all([DB.getOrders(), DB.getSessions()]);
+      if (ordersFromDb) {
+        Store.set('orders', ordersFromDb);
+      }
+      if (sessionsFromDb) {
+        Store.set('sessions', sessionsFromDb);
+      }
+    }
+
+    function getRenderSignature(orders) {
+      const paymentSignature = (Store.get('sessions') || [])
+        .map(s => `${s.id}:${s.status || ''}:${s.paymentMethod || ''}`)
+        .join('|');
+      const orderSignature = orders
+        .map(o => `${o.id}:${o.status}:${o.total}:${o.createdAt}`)
+        .join('|');
+
+      return `${filterStatus}::${searchQuery}::${orderSignature}::${paymentSignature}`;
+    }
+
     // Bind refresh
     const refreshBtn = document.getElementById('refresh-orders-btn');
     refreshBtn.addEventListener('click', async () => {
       refreshBtn.innerHTML = '🔄 ...';
-      if (DB_ENABLED) {
-        await Promise.all([DB.getOrders(), DB.getSessions()]);
-      }
-      updateGrid();
+      await syncOrdersAndSessions();
+      updateGrid(true);
       refreshBtn.innerHTML = '🔄 Refresh Orders';
     });
 
     let lastSeenOrderId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o=>o.id)) : 0;
 
-    function updateGrid() {
+    function updateGrid(force = false) {
       // 1. Check for new orders to play sound
       const maxId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o=>o.id)) : 0;
       if (maxId > lastSeenOrderId) {
@@ -86,6 +107,12 @@ function renderAdminOrders() {
           o.customerName.toLowerCase().includes(searchQuery)
         );
       }
+
+      const newSignature = getRenderSignature(orders);
+      if (!force && newSignature === lastRenderSignature) {
+        return;
+      }
+      lastRenderSignature = newSignature;
 
       // 4. Render Grid
       const contentEl = document.getElementById('orders-content');
@@ -181,12 +208,10 @@ function renderAdminOrders() {
     window._updateOrdersGrid = updateGrid;
     updateGrid();
 
-    // Auto-refresh every 5 seconds to pick up new orders from DB
+    // Keep data fresh without forcing disruptive re-renders.
     const refreshInterval = setInterval(async () => {
       if (document.getElementById('admin-page-content')) {
-         if (DB_ENABLED) {
-           await Store.refreshFromDB();
-         }
+         await syncOrdersAndSessions();
          updateGrid();
       } else {
         clearInterval(refreshInterval);
