@@ -58,11 +58,12 @@ function renderAdminLogin() {
     btn.disabled = true;
     errorEl.style.display = 'none';
 
-    if (await Store.adminLogin(email, password)) {
+    const result = await Store.adminLogin(email, password);
+    if (result && result.success) {
       Toast.success('Welcome back!');
       Router.navigate('/admin/dashboard');
     } else {
-      errorEl.textContent = 'Invalid email or password';
+      errorEl.textContent = result.error || 'Invalid email or password';
       errorEl.style.display = 'block';
       btn.innerHTML = originalText;
       btn.disabled = false;

@@ -426,19 +426,17 @@ const Store = {
   async adminLogin(email, password) {
     if (DB_ENABLED) {
       const { data, error } = await DB.adminLogin(email, password);
-      if (error || !data.session) return false;
-      this.set('adminAuth', { 
-        id: data.user.id, 
-        email: data.user.email, 
-        role: 'Admin' 
+      if (error) return { success: false, error: error.message };
+      if (!data || !data.session) return { success: false, error: 'No session established. Did you verify your email in Supabase?' };
+      
+      this.set('adminAuth', {
+        id: data.user.id,
+        email: data.user.email,
+        role: 'Admin'
       });
-      return true;
-    } else {
-      // Fallback for local development ONLY (Do NOT use in production)
-      // We will reject this since the requirement says remove hardcoded frontend auth.
-      console.error("Local auth is disabled for security. Connect to Supabase.");
-      return false;
+      return { success: true };
     }
+    return { success: false, error: 'Database is not connected' };
   },
 
   async adminLogout() {
