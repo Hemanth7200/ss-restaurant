@@ -12,12 +12,12 @@ function renderMenu() {
   const categories = Store.get('categories').filter(c => c.active).sort((a, b) => a.order - b.order);
   const menuItems = Store.get('menuItems').filter(m => m.active);
   const tableNum = Utils.getTableNumber(session.tableId);
-  const cartCount = session.cart.reduce((sum, c) => sum + c.quantity, 0);
+  const cartCount = session.cart.length;
 
   app.innerHTML = `
     <div class="menu-page">
       <header class="customer-header">
-        <div class="customer-header-left">
+        <div class="customer-header-left" style="cursor: pointer;" onclick="Router.navigate('/menu')">
           <img src="assets/logo.png" alt="Logo" class="customer-header-logo" />
           <div>
             <div class="customer-header-title">SS Restaurant</div>
@@ -49,24 +49,6 @@ function renderMenu() {
 
       <div class="menu-grid" id="menu-grid">
         <!-- Rendered by JS -->
-      </div>
-
-
-    </div>
-
-    <!-- Chat Widget -->
-    <button class="chat-widget-btn" id="chat-widget-toggle" title="Complaints & Requests">💬</button>
-    <div class="chat-panel hidden" id="chat-panel">
-      <div class="chat-panel-header">
-        <h4>Complaints & Requests</h4>
-        <button class="modal-close" id="chat-close">✕</button>
-      </div>
-      <div class="chat-panel-body">
-        <div class="form-group">
-          <label class="form-label">Your Message</label>
-          <textarea id="chat-message" class="form-input" placeholder="Tell us how we can help..." rows="4"></textarea>
-        </div>
-        <button class="btn btn-primary btn-full" id="chat-send">Send Message</button>
       </div>
     </div>
   `;
@@ -120,10 +102,9 @@ function renderMenu() {
       const cartItem = currentSession.cart.find(c => c.itemId === item.id);
       const qty = cartItem ? cartItem.quantity : 0;
 
-      // Get the correct image — lookup from defaults by name, fallback to stored value
-      const defaultItem = DEFAULT_MENU_ITEMS.find(d => d.id === item.id || d.name === item.name);
-      const itemImage = (defaultItem && (defaultItem.image.startsWith('http') || defaultItem.image.startsWith('assets'))) ? defaultItem.image : item.image;
-      const isUrl = itemImage && (itemImage.startsWith('http') || itemImage.startsWith('/') || itemImage.startsWith('assets'));
+      // Use the actual item image stored in DB
+      const itemImage = item.image;
+      const isUrl = itemImage && (itemImage.startsWith('http') || itemImage.startsWith('/') || itemImage.startsWith('assets') || itemImage.startsWith('data:image'));
       const gradient = Utils.getFoodGradient(item.image);
 
       return `
@@ -131,7 +112,7 @@ function renderMenu() {
           <div class="menu-card-img">
             ${isUrl
               ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" loading="lazy" onerror="this.onerror=null; this.src='assets/logo.png'; this.style.objectFit='contain';" />`
-              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;background:${gradient}">${itemImage}</div>`
+              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;background:${gradient}">${itemImage || '🍽️'}</div>`
             }
           </div>
           <div class="menu-card-info">
@@ -179,24 +160,8 @@ function renderMenu() {
   // Cart button
   document.getElementById('go-cart').addEventListener('click', () => Router.navigate('/cart'));
 
-
-
-  // Chat Widget
-  const chatToggle = document.getElementById('chat-widget-toggle');
-  const chatPanel = document.getElementById('chat-panel');
-  document.getElementById('chat-close').addEventListener('click', () => chatPanel.classList.add('hidden'));
-  chatToggle.addEventListener('click', () => chatPanel.classList.toggle('hidden'));
-  document.getElementById('chat-send').addEventListener('click', () => {
-    const msg = document.getElementById('chat-message').value.trim();
-    if (msg) {
-      const complaint = { id: Utils.generateId('comp'), message: msg, createdAt: new Date().toISOString(), tableId: session.tableId };
-      Store.update('complaints', c => [...c, complaint]);
-      DB.saveComplaint(complaint);
-      document.getElementById('chat-message').value = '';
-      chatPanel.classList.add('hidden');
-      Toast.success('Message sent!');
-    }
-  });
+  // Expose render function for smooth updates
+  window._menuRenderItems = renderMenuItems;
 }
 
 // Global functions for menu item buttons
@@ -204,12 +169,26 @@ function menuAddItem(itemId) {
   const item = Store.get('menuItems').find(m => m.id === itemId);
   if (item) {
     Store.addToCart(item);
-    renderMenu(); // re-render
-    Toast.success(`${item.name} added to cart`);
+    updateMenuDOM();
   }
 }
 
 function menuUpdateQty(itemId, qty) {
   Store.updateCartQty(itemId, qty);
-  renderMenu();
+  updateMenuDOM();
 }
+
+function updateMenuDOM() {
+  const session = Store.getCurrentSession();
+  if (!session) return;
+  const cartCountEl = document.getElementById('cart-count');
+  if (cartCountEl) {
+    const cartCount = session.cart.length;
+    cartCountEl.textContent = cartCount || '';
+  }
+  if (window._menuRenderItems) {
+    window._menuRenderItems();
+  }
+}
+
+

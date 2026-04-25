@@ -5,38 +5,106 @@
 function renderAdminOrders() {
   renderAdminLayout('Live Orders', (container) => {
     let filterStatus = 'all';
+    let searchQuery = '';
 
-    function render() {
+    // Build the skeleton ONCE
+    container.innerHTML = `
+      <div class="filter-tabs" id="order-filters">
+        <!-- Rendered by updateGrid -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-lg); align-items: center;">
+        <div class="search-bar" style="max-width: 300px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-input" id="order-search" placeholder="Search by order ID or table..." />
+        </div>
+        <button class="btn btn-secondary" id="refresh-orders-btn">🔄 Refresh Orders</button>
+      </div>
+
+      <div id="orders-content">
+        <!-- Grid goes here -->
+      </div>
+    `;
+
+    // Bind search
+    const searchInput = document.getElementById('order-search');
+    searchInput.addEventListener('input', Utils.debounce((e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      updateGrid();
+    }, 300));
+
+    // Bind refresh
+    const refreshBtn = document.getElementById('refresh-orders-btn');
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.innerHTML = '🔄 ...';
+      if (DB_ENABLED) {
+        await Promise.all([DB.getOrders(), DB.getSessions()]);
+      }
+      updateGrid();
+      refreshBtn.innerHTML = '🔄 Refresh Orders';
+    });
+
+    let lastSeenOrderId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o=>o.id)) : 0;
+
+    function updateGrid() {
+      // 1. Check for new orders to play sound
+      const maxId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o=>o.id)) : 0;
+      if (maxId > lastSeenOrderId) {
+        lastSeenOrderId = maxId;
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play().catch(e => console.error("Audio play failed:", e));
+      }
+
+      // 2. Render Filters
+      const filtersEl = document.getElementById('order-filters');
+      if (filtersEl) {
+        filtersEl.innerHTML = ['all', 'new', 'preparing', 'completed', 'delivered', 'cancelled'].map(s => `
+          <button class="filter-tab ${filterStatus === s ? 'active' : ''}" data-status="${s}">
+            ${s === 'all' ? 'All' : Utils.getStatusLabel(s)}
+            ${s !== 'all' ? `<span style="margin-left:4px;font-size:11px;">(${Store.get('orders').filter(o => o.status === s).length})</span>` : ''}
+          </button>
+        `).join('');
+        
+        // Re-bind filter clicks
+        filtersEl.querySelectorAll('.filter-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            filterStatus = tab.dataset.status;
+            updateGrid();
+          });
+        });
+      }
+
+      // 3. Filter and Search Orders
       let orders = Store.get('orders').slice().reverse();
       if (filterStatus !== 'all') {
         orders = orders.filter(o => o.status === filterStatus);
       }
+      if (searchQuery) {
+        orders = orders.filter(o =>
+          String(o.id).includes(searchQuery) ||
+          String(Utils.getTableNumber(o.tableId)).includes(searchQuery) ||
+          o.customerName.toLowerCase().includes(searchQuery)
+        );
+      }
 
-      container.innerHTML = `
-        <div class="filter-tabs" id="order-filters">
-          ${['all', 'new', 'preparing', 'completed', 'cancelled'].map(s => `
-            <button class="filter-tab ${filterStatus === s ? 'active' : ''}" data-status="${s}">
-              ${s === 'all' ? 'All' : Utils.getStatusLabel(s)}
-              ${s !== 'all' ? `<span style="margin-left:4px;font-size:11px;">(${Store.get('orders').filter(o => o.status === s).length})</span>` : ''}
-            </button>
-          `).join('')}
-        </div>
+      // 4. Render Grid
+      const contentEl = document.getElementById('orders-content');
+      if (!contentEl) return;
 
-        <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-lg); align-items: center;">
-          <div class="search-bar" style="max-width: 300px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" class="form-input" id="order-search" placeholder="Search by order ID or table..." />
-          </div>
-          <button class="btn btn-secondary" id="refresh-orders-btn">🔄 Refresh Orders</button>
-        </div>
-
-        ${orders.length === 0 ? `
-          <div class="empty-state">
-            <div class="empty-state-icon">📋</div>
-            <h3>No ${filterStatus === 'all' ? '' : filterStatus} orders</h3>
-            <p>Orders will appear here when customers place them</p>
-          </div>
-        ` : `
+      if (orders.length === 0) {
+        if (searchQuery) {
+          contentEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state-icon">🔍</div><h3>No matching orders</h3></div>';
+        } else {
+          contentEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <h3>No ${filterStatus === 'all' ? '' : filterStatus} orders</h3>
+              <p>Orders will appear here when customers place them</p>
+            </div>
+          `;
+        }
+      } else {
+        contentEl.innerHTML = `
           <div class="orders-grid">
             ${orders.map(order => {
               // Find session for this order to check payment status
@@ -54,8 +122,6 @@ function renderAdminOrders() {
                 }
               }
 
-              let paymentAction = '';
-
               return `
               <div class="order-card">
                 <div class="order-card-header">
@@ -68,7 +134,10 @@ function renderAdminOrders() {
                 </div>
                 <div class="order-card-body">
                   <div class="order-card-customer">
-                    <span>👤 ${Utils.escapeHtml(order.customerName)}</span>
+                    <span style="display:flex; flex-direction:column; gap:4px;">
+                      <span>👤 ${Utils.escapeHtml(order.customerName)}</span>
+                      <span style="font-size:0.85em; color:var(--text-muted);">📞 ${Utils.escapeHtml(order.customerPhone || 'N/A')}</span>
+                    </span>
                     <span>📍 Table ${Utils.getTableNumber(order.tableId)}</span>
                   </div>
                   <div class="order-items-list">
@@ -89,74 +158,36 @@ function renderAdminOrders() {
                 <div class="order-card-footer">
                   <span class="order-total">${Utils.formatPrice(order.total)}</span>
                   <div class="order-actions">
-                    ${paymentAction}
                     ${order.status === 'new' ? `
                       <button class="btn btn-sm btn-danger" onclick="adminUpdateOrder(${order.id}, 'cancelled')">Cancel</button>
                       <button class="btn btn-sm" style="background:var(--color-warning);color:#fff;" onclick="adminUpdateOrder(${order.id}, 'preparing')">Preparing</button>
                     ` : ''}
                     ${order.status === 'preparing' ? `
-                      <button class="btn btn-sm btn-success" onclick="adminUpdateOrder(${order.id}, 'completed')">Completed</button>
+                      <button class="btn btn-sm" style="background:var(--color-success);color:#fff;" onclick="adminUpdateOrder(${order.id}, 'completed')">Completed</button>
+                    ` : ''}
+                    ${order.status === 'completed' ? `
+                      <button class="btn btn-sm btn-success" onclick="adminUpdateOrder(${order.id}, 'delivered')">Delivered</button>
                     ` : ''}
                   </div>
                 </div>
               </div>
             `}).join('')}
           </div>
-        `}
-      `;
-
-      // Filter clicks
-      container.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          filterStatus = tab.dataset.status;
-          render();
-        });
-      });
-
-      const refreshBtn = document.getElementById('refresh-orders-btn');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', async () => {
-          refreshBtn.innerHTML = '🔄 ...';
-          if (DB_ENABLED) {
-            await Promise.all([DB.getOrders(), DB.getSessions()]);
-          }
-          render();
-        });
-      }
-
-      // Search
-      const searchInput = document.getElementById('order-search');
-      if (searchInput) {
-        searchInput.addEventListener('input', Utils.debounce((e) => {
-          const q = e.target.value.trim().toLowerCase();
-          if (!q) { render(); return; }
-          const filteredOrders = Store.get('orders').filter(o =>
-            String(o.id).includes(q) ||
-            String(Utils.getTableNumber(o.tableId)).includes(q) ||
-            o.customerName.toLowerCase().includes(q)
-          ).reverse();
-          // Re-render with filtered
-          const grid = container.querySelector('.orders-grid');
-          if (grid && filteredOrders.length === 0) {
-            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state-icon">🔍</div><h3>No matching orders</h3></div>';
-          }
-        }, 300));
+        `;
       }
     }
 
-    render();
+    // Expose for external calls from buttons
+    window._updateOrdersGrid = updateGrid;
+    updateGrid();
 
     // Auto-refresh every 5 seconds to pick up new orders from DB
     const refreshInterval = setInterval(async () => {
       if (document.getElementById('admin-page-content')) {
-        const searchInput = document.getElementById('order-search');
-        // Only refresh if not actively searching/typing
-        if (searchInput && document.activeElement !== searchInput && filterStatus === 'all') {
-           if (DB_ENABLED) {
-             await Store.refreshFromDB();
-           }
-           render();
-        }
+         if (DB_ENABLED) {
+           await Store.refreshFromDB();
+         }
+         updateGrid();
       } else {
         clearInterval(refreshInterval);
       }
@@ -167,5 +198,12 @@ function renderAdminOrders() {
 function adminUpdateOrder(orderId, status) {
   Store.updateOrderStatus(orderId, status);
   Toast.success(`Order #${orderId} marked as ${status}`);
-  renderAdminOrders();
+  
+  // Directly update local state
+  Store.update('orders', orders => orders.map(o => o.id === orderId ? { ...o, status } : o));
+  
+  // Update UI seamlessly
+  if (window._updateOrdersGrid) {
+    window._updateOrdersGrid();
+  }
 }

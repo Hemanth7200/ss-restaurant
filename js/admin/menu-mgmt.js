@@ -6,89 +6,121 @@ function renderAdminMenu() {
   renderAdminLayout('Menu Items', (container) => {
     const categories = Store.get('categories');
     let filterCat = 'all';
+    let searchQuery = '';
 
-    function render() {
+    container.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);flex-wrap:wrap;gap:var(--space-md);">
+        <div class="filter-tabs" style="margin-bottom:0;" id="menu-filters">
+          <button class="filter-tab active" data-cat="all">All</button>
+          ${categories.map(c => `
+            <button class="filter-tab" data-cat="${c.id}">${c.name}</button>
+          `).join('')}
+        </div>
+        <button class="btn btn-primary" id="add-menu-item-btn">+ Add Item</button>
+      </div>
+
+      <div class="search-bar" style="max-width: 300px; margin-bottom: var(--space-xl);">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="form-input" id="menu-search" placeholder="Search menu items..." />
+      </div>
+
+      <div class="data-table-wrapper" id="menu-table-container">
+        <!-- Table rendered here -->
+      </div>
+    `;
+
+    function updateTable() {
       let items = Store.get('menuItems');
       if (filterCat !== 'all') items = items.filter(m => m.category === filterCat);
+      if (searchQuery) {
+        items = items.filter(m => m.name.toLowerCase().includes(searchQuery) || m.description.toLowerCase().includes(searchQuery));
+      }
 
-      container.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-xl);flex-wrap:wrap;gap:var(--space-md);">
-          <div class="filter-tabs" style="margin-bottom:0;">
-            <button class="filter-tab ${filterCat === 'all' ? 'active' : ''}" data-cat="all">All</button>
-            ${categories.map(c => `
-              <button class="filter-tab ${filterCat === c.id ? 'active' : ''}" data-cat="${c.id}">${c.name}</button>
-            `).join('')}
-          </div>
-          <button class="btn btn-primary" id="add-menu-item-btn">+ Add Item</button>
-        </div>
+      const tableContainer = document.getElementById('menu-table-container');
+      if (!tableContainer) return;
 
-        <div class="data-table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Type</th>
-                <th>Active</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${items.map(item => {
-                const cat = categories.find(c => c.id === item.category);
-                return `
-                  <tr>
-                    <td>
-                      <div style="display:flex;align-items:center;gap:var(--space-md);">
-                        <div style="width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--bg-input); flex-shrink: 0;">
-                          ${item.image && (item.image.startsWith('http') || item.image.startsWith('data:') || item.image.startsWith('assets')) 
-                            ? `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover;" />` 
-                            : (item.image || '🍽️')}
-                        </div>
-                        <div>
-                          <div style="font-weight:600;">${Utils.escapeHtml(item.name)}</div>
-                          <div style="font-size:var(--font-size-xs);color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escapeHtml(item.description)}</div>
-                        </div>
+      tableContainer.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Type</th>
+              <th>Active</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.length === 0 ? `<tr><td colspan="6" style="text-align:center;padding:2rem;">No items found.</td></tr>` : items.map(item => {
+              const cat = categories.find(c => c.id === item.category);
+              return `
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:var(--space-md);">
+                      <div style="width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--bg-input); flex-shrink: 0;">
+                        ${item.image && (item.image.startsWith('http') || item.image.startsWith('data:') || item.image.startsWith('assets')) 
+                          ? `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover;" />` 
+                          : (item.image || '🍽️')}
                       </div>
-                    </td>
-                    <td>${cat ? cat.name : '—'}</td>
-                    <td><strong>${Utils.formatPrice(item.price)}</strong></td>
-                    <td><span class="badge ${item.isVeg ? 'badge-veg' : 'badge-nonveg'}">${item.isVeg ? 'Veg' : 'Non-Veg'}</span></td>
-                    <td>
-                      <label class="toggle">
-                        <input type="checkbox" ${item.active ? 'checked' : ''} onchange="toggleMenuItem('${item.id}', this.checked)" />
-                        <span class="toggle-slider"></span>
-                      </label>
-                    </td>
-                    <td>
-                      <div class="table-actions">
-                        <button class="btn btn-sm btn-ghost" onclick="editMenuItem('${item.id}')">✏️</button>
-                        <button class="btn btn-sm btn-ghost" onclick="deleteMenuItem('${item.id}')">🗑️</button>
+                      <div>
+                        <div style="font-weight:600;">${Utils.escapeHtml(item.name)}</div>
+                        <div style="font-size:var(--font-size-xs);color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escapeHtml(item.description)}</div>
                       </div>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </td>
+                  <td>${cat ? cat.name : '—'}</td>
+                  <td><strong>${Utils.formatPrice(item.price)}</strong></td>
+                  <td><span class="badge ${item.isVeg ? 'badge-veg' : 'badge-nonveg'}">${item.isVeg ? 'Veg' : 'Non-Veg'}</span></td>
+                  <td>
+                    <label class="toggle">
+                      <input type="checkbox" ${item.active ? 'checked' : ''} onchange="toggleMenuItem('${item.id}', this.checked)" />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="btn btn-sm btn-ghost" onclick="editMenuItem('${item.id}')">✏️</button>
+                      <button class="btn btn-sm btn-ghost" onclick="deleteMenuItem('${item.id}')">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
       `;
 
-      // Category filter
-      container.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          filterCat = tab.dataset.cat;
-          render();
+      // Update active state of filter tabs visually
+      const filterEls = document.getElementById('menu-filters');
+      if (filterEls) {
+        filterEls.querySelectorAll('.filter-tab').forEach(tab => {
+          tab.classList.toggle('active', tab.dataset.cat === filterCat);
         });
-      });
-
-      // Add button
-      document.getElementById('add-menu-item-btn').addEventListener('click', () => showMenuItemModal());
+      }
     }
 
-    render();
-    window._refreshAdminMenu = render;
+    // Bind Search
+    const searchInput = document.getElementById('menu-search');
+    searchInput.addEventListener('input', Utils.debounce((e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      updateTable();
+    }, 250));
+
+    // Bind Category Filter
+    const filterEls = document.getElementById('menu-filters');
+    filterEls.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterCat = tab.dataset.cat;
+        updateTable();
+      });
+    });
+
+    // Add button
+    document.getElementById('add-menu-item-btn').addEventListener('click', () => showMenuItemModal());
+
+    updateTable();
+    window._refreshAdminMenu = updateTable;
   });
 }
 
@@ -128,10 +160,11 @@ function showMenuItemModal(editId) {
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
             <div class="form-group">
-              <label class="form-label">Type</label>
+              <label class="form-label">Type *</label>
               <select id="mi-veg" class="form-input">
-                <option value="true" ${item && item.isVeg ? 'selected' : ''}>Veg</option>
-                <option value="false" ${item && !item.isVeg ? 'selected' : ''}>Non-Veg</option>
+                <option value="" disabled ${!item ? 'selected' : ''}>Select Type...</option>
+                <option value="true" ${item && item.isVeg === true ? 'selected' : ''}>Veg</option>
+                <option value="false" ${item && item.isVeg === false ? 'selected' : ''}>Non-Veg</option>
               </select>
             </div>
             <div class="form-group">
@@ -187,11 +220,12 @@ function showMenuItemModal(editId) {
     const desc = document.getElementById('mi-desc').value.trim();
     const price = parseInt(document.getElementById('mi-price').value);
     const category = document.getElementById('mi-category').value;
-    const isVeg = document.getElementById('mi-veg').value === 'true';
+    const typeVal = document.getElementById('mi-veg').value;
+    const isVeg = typeVal === 'true';
     const image = document.getElementById('mi-image').value.trim() || '🍽️';
 
-    if (!name || !price || !category) {
-      Toast.error('Please fill in all required fields');
+    if (!name || !price || !category || typeVal === "") {
+      Toast.error('Please fill in all required fields, including Type');
       return;
     }
 

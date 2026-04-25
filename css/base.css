@@ -86,11 +86,7 @@ p { color: var(--text-secondary); }
   outline-offset: 2px;
 }
 
-/* ---- Selection ---- */
-::selection {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
+
 
 /* ---- App Container ---- */
 #app {

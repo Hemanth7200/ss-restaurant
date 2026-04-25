@@ -43,11 +43,10 @@ function renderLanding() {
     }
   }
 
-  // Check if there's already an active session (manual fallback)
+  // Clear any existing session if they navigate explicitly to the landing page without a table param
   const session = Store.getCurrentSession();
   if (session) {
-    Router.navigate('/' + (session.currentStep || 'menu'));
-    return;
+    Store.endSession();
   }
 
   app.innerHTML = `

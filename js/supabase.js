@@ -25,7 +25,14 @@ function initSupabase() {
 
   try {
     const { createClient } = supabase;
-    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        storage: window.sessionStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    });
     DB_ENABLED = true;
     console.log('✅ Supabase connected');
   } catch (e) {

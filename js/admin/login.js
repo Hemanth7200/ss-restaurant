@@ -53,6 +53,16 @@ function renderAdminLogin() {
       return;
     }
 
+    // Account Lockout Check
+    const attemptsKey = `login_attempts_${email}`;
+    let attemptsData = JSON.parse(localStorage.getItem(attemptsKey) || '{"count":0, "lockUntil":0}');
+    if (attemptsData.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((attemptsData.lockUntil - Date.now()) / 60000);
+      errorEl.textContent = `Account locked due to multiple failed attempts. Try again in ${minutesLeft} minutes.`;
+      errorEl.style.display = 'block';
+      return;
+    }
+
     const originalText = btn.innerHTML;
     btn.innerHTML = '<div class="spinner"></div>';
     btn.disabled = true;
@@ -60,10 +70,22 @@ function renderAdminLogin() {
 
     const result = await Store.adminLogin(email, password);
     if (result && result.success) {
+      localStorage.removeItem(attemptsKey); // Clear on success
       Toast.success('Welcome back!');
       Router.navigate('/admin/dashboard');
     } else {
-      errorEl.textContent = result.error || 'Invalid email or password';
+      attemptsData.count += 1;
+      if (attemptsData.count >= 5) {
+        attemptsData.lockUntil = Date.now() + 15 * 60000; // 15 mins lock
+      }
+      localStorage.setItem(attemptsKey, JSON.stringify(attemptsData));
+
+      if (attemptsData.count >= 5) {
+        errorEl.textContent = 'Account locked due to multiple failed attempts. Try again in 15 minutes.';
+      } else {
+        errorEl.textContent = result.error || 'Invalid email or password';
+      }
+      
       errorEl.style.display = 'block';
       btn.innerHTML = originalText;
       btn.disabled = false;
@@ -143,10 +165,10 @@ function renderAdminLayout(pageTitle, contentFn) {
   });
 
   // Logout
-  document.getElementById('admin-logout').addEventListener('click', () => {
-    Store.adminLogout();
+  document.getElementById('admin-logout').addEventListener('click', async () => {
+    await Store.adminLogout();
     Toast.info('Logged out');
-    Router.navigate('/admin');
+    window.location.replace(window.location.origin + window.location.pathname + '#/admin');
   });
 
   // Mobile toggle
