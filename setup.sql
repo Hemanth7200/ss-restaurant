@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS orders (
   subtotal INT DEFAULT 0,
   gst INT DEFAULT 0,
   total INT DEFAULT 0,
-  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'preparing', 'completed', 'cancelled')),
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'preparing', 'delivered', 'cancelled')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

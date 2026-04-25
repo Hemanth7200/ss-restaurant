@@ -54,6 +54,7 @@ const Utils = {
       'new': 'badge-info',
       'preparing': 'badge-warning',
       'completed': 'badge-success',
+      'delivered': 'badge-success',
       'cancelled': 'badge-error'
     };
     return map[status] || 'badge-info';
@@ -63,7 +64,9 @@ const Utils = {
     const map = {
       'new': 'New',
       'preparing': 'Preparing',
-      'completed': 'Completed',
+      // Backward compatibility: old "completed" records are treated as delivered.
+      'completed': 'Delivered',
+      'delivered': 'Delivered',
       'cancelled': 'Cancelled'
     };
     return map[status] || status;

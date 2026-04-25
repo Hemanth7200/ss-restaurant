@@ -20,7 +20,21 @@ function renderAdminLogin() {
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" id="admin-password" class="form-input" placeholder="Enter your password" />
+            <div style="position: relative;">
+              <input type="password" id="admin-password" class="form-input" placeholder="Enter your password" style="padding-right: 44px;" />
+              <button type="button" id="toggle-admin-password" aria-label="Show password" title="Show password" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:4px;">
+                <svg id="admin-password-eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg id="admin-password-eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C5 20 1 12 1 12a21.77 21.77 0 0 1 5.06-7.94"></path>
+                  <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-3.12 4.87"></path>
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
           </div>
           <div id="login-error" class="form-error" style="display: none;"></div>
           <button class="btn btn-primary btn-full btn-lg" id="admin-login-btn">
@@ -32,7 +46,21 @@ function renderAdminLogin() {
   `;
 
   document.getElementById('admin-login-btn').addEventListener('click', doLogin);
-  document.getElementById('admin-password').addEventListener('keydown', (e) => {
+  const passwordInput = document.getElementById('admin-password');
+  const togglePasswordBtn = document.getElementById('toggle-admin-password');
+  const eyeOpen = document.getElementById('admin-password-eye-open');
+  const eyeClosed = document.getElementById('admin-password-eye-closed');
+
+  togglePasswordBtn.addEventListener('click', () => {
+    const isHidden = passwordInput.type === 'password';
+    passwordInput.type = isHidden ? 'text' : 'password';
+    eyeOpen.style.display = isHidden ? 'none' : 'block';
+    eyeClosed.style.display = isHidden ? 'block' : 'none';
+    togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+    togglePasswordBtn.title = isHidden ? 'Hide password' : 'Show password';
+  });
+
+  passwordInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doLogin();
   });
 
@@ -70,12 +98,12 @@ function renderAdminLogin() {
       Router.navigate('/admin/dashboard');
     } else {
       attemptsData.count += 1;
-      if (attemptsData.count >= 5) {
+      if (attemptsData.count > 5) {
         attemptsData.lockUntil = Date.now() + 15 * 60000; // 15 mins lock
       }
       localStorage.setItem(attemptsKey, JSON.stringify(attemptsData));
 
-      if (attemptsData.count >= 5) {
+      if (attemptsData.count > 5) {
         errorEl.textContent = 'Account locked due to multiple failed attempts. Try again in 15 minutes.';
       } else {
         errorEl.textContent = result.error || 'Invalid email or password';

@@ -79,7 +79,7 @@ function renderAdminOrders() {
       // 2. Render Filters
       const filtersEl = document.getElementById('order-filters');
       if (filtersEl) {
-        filtersEl.innerHTML = ['all', 'new', 'preparing', 'completed', 'delivered', 'cancelled'].map(s => `
+        filtersEl.innerHTML = ['all', 'new', 'preparing', 'delivered', 'cancelled'].map(s => `
           <button class="filter-tab ${filterStatus === s ? 'active' : ''}" data-status="${s}">
             ${s === 'all' ? 'All' : Utils.getStatusLabel(s)}
             ${s !== 'all' ? `<span style="margin-left:4px;font-size:11px;">(${Store.get('orders').filter(o => o.status === s).length})</span>` : ''}
@@ -190,9 +190,6 @@ function renderAdminOrders() {
                       <button class="btn btn-sm" style="background:var(--color-warning);color:#fff;" onclick="adminUpdateOrder(${order.id}, 'preparing')">Preparing</button>
                     ` : ''}
                     ${order.status === 'preparing' ? `
-                      <button class="btn btn-sm" style="background:var(--color-success);color:#fff;" onclick="adminUpdateOrder(${order.id}, 'completed')">Completed</button>
-                    ` : ''}
-                    ${order.status === 'completed' ? `
                       <button class="btn btn-sm btn-success" onclick="adminUpdateOrder(${order.id}, 'delivered')">Delivered</button>
                     ` : ''}
                   </div>
