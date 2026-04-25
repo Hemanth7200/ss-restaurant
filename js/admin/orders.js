@@ -14,7 +14,7 @@ function renderAdminOrders() {
         <!-- Rendered by updateGrid -->
       </div>
 
-      <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-lg); align-items: center;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-lg); align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
         <div class="search-bar" style="max-width: 300px;">
           <span class="search-icon">🔍</span>
           <input type="text" class="form-input" id="order-search" placeholder="Search by order ID or table..." />

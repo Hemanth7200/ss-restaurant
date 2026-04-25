@@ -106,7 +106,13 @@ function renderAdminLogin() {
       if (attemptsData.count > 5) {
         errorEl.textContent = 'Account locked due to multiple failed attempts. Try again in 15 minutes.';
       } else {
-        errorEl.textContent = result.error || 'Invalid email or password';
+        const remainingAttempts = Math.max(5 - attemptsData.count, 0);
+        const baseError = result.error || 'Invalid email or password';
+        if (remainingAttempts > 0) {
+          errorEl.textContent = `${baseError}. ${remainingAttempts} more attempt${remainingAttempts === 1 ? '' : 's'} left.`;
+        } else {
+          errorEl.textContent = baseError;
+        }
       }
       
       errorEl.style.display = 'block';

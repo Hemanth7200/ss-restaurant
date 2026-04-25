@@ -56,6 +56,19 @@ function renderMenu() {
   let activeCategory = 'all';
   let searchQuery = '';
 
+  function buildMenuCardAction(itemId, qty) {
+    if (qty > 0) {
+      return `
+        <div class="qty-stepper">
+          <button onclick="menuUpdateQty('${itemId}', ${qty - 1})">−</button>
+          <span class="qty-value">${qty}</span>
+          <button onclick="menuUpdateQty('${itemId}', ${qty + 1})">+</button>
+        </div>
+      `;
+    }
+    return `<button class="btn-add" onclick="menuAddItem('${itemId}')">+ Add</button>`;
+  }
+
   function renderMenuItems() {
     const grid = document.getElementById('menu-grid');
     let items = menuItems;
@@ -121,15 +134,9 @@ function renderMenu() {
             <div class="menu-card-desc">${Utils.escapeHtml(item.description)}</div>
             <div class="menu-card-bottom">
               <span class="menu-card-price">${Utils.formatPrice(item.price)}</span>
-              ${qty > 0 ? `
-                <div class="qty-stepper">
-                  <button onclick="menuUpdateQty('${item.id}', ${qty - 1})">−</button>
-                  <span class="qty-value">${qty}</span>
-                  <button onclick="menuUpdateQty('${item.id}', ${qty + 1})">+</button>
-                </div>
-              ` : `
-                <button class="btn-add" onclick="menuAddItem('${item.id}')">+ Add</button>
-              `}
+              <div data-actions-id="${item.id}">
+                ${buildMenuCardAction(item.id, qty)}
+              </div>
             </div>
           </div>
         </div>
@@ -169,16 +176,16 @@ function menuAddItem(itemId) {
   const item = Store.get('menuItems').find(m => m.id === itemId);
   if (item) {
     Store.addToCart(item);
-    updateMenuDOM();
+    updateMenuDOM(itemId);
   }
 }
 
 function menuUpdateQty(itemId, qty) {
   Store.updateCartQty(itemId, qty);
-  updateMenuDOM();
+  updateMenuDOM(itemId);
 }
 
-function updateMenuDOM() {
+function updateMenuDOM(changedItemId) {
   const session = Store.getCurrentSession();
   if (!session) return;
   const cartCountEl = document.getElementById('cart-count');
@@ -186,6 +193,27 @@ function updateMenuDOM() {
     const cartCount = session.cart.length;
     cartCountEl.textContent = cartCount || '';
   }
+
+  if (changedItemId) {
+    const actionContainer = document.querySelector(`[data-actions-id="${changedItemId}"]`);
+    if (actionContainer) {
+      const cartItem = session.cart.find(c => c.itemId === changedItemId);
+      const qty = cartItem ? cartItem.quantity : 0;
+      if (qty > 0) {
+        actionContainer.innerHTML = `
+          <div class="qty-stepper">
+            <button onclick="menuUpdateQty('${changedItemId}', ${qty - 1})">−</button>
+            <span class="qty-value">${qty}</span>
+            <button onclick="menuUpdateQty('${changedItemId}', ${qty + 1})">+</button>
+          </div>
+        `;
+      } else {
+        actionContainer.innerHTML = `<button class="btn-add" onclick="menuAddItem('${changedItemId}')">+ Add</button>`;
+      }
+      return;
+    }
+  }
+
   if (window._menuRenderItems) {
     window._menuRenderItems();
   }

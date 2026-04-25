@@ -6,6 +6,23 @@ function renderAdminDashboard() {
   let chartRange = '7days'; // 7days, 1month, 1year
   let lastKnownMaxOrderId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o => o.id)) : 0;
 
+  function showDashboardOrderPopup(message) {
+    const existing = document.getElementById('admin-order-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'admin-order-popup';
+    popup.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;background:#111827;color:#fff;padding:12px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.25);font-size:13px;font-weight:600;max-width:280px;';
+    popup.textContent = message;
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+      popup.style.opacity = '0';
+      popup.style.transition = 'opacity 250ms ease';
+      setTimeout(() => popup.remove(), 250);
+    }, 2800);
+  }
+
   function renderDashboardContent(container) {
     const todayOrders = Store.getTodayOrders();
     const todayRevenue = Store.getTodayRevenue();
@@ -64,7 +81,7 @@ function renderAdminDashboard() {
     const recentOrders = Store.get('orders').slice(-10).reverse();
 
     container.innerHTML = `
-      <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="dashboard-grid">
         <div class="stat-card">
           <div class="stat-card-info">
             <h4>Today's Orders</h4>
@@ -176,9 +193,13 @@ function renderAdminDashboard() {
 
       const newestOrder = orders.find(o => o.id === maxOrderId);
       if (newestOrder) {
-        Toast.info(`New order #${newestOrder.id} received for Table ${Utils.getTableNumber(newestOrder.tableId)}`);
+        const message = `New order #${newestOrder.id} received for Table ${Utils.getTableNumber(newestOrder.tableId)}`;
+        Toast.info(message);
+        showDashboardOrderPopup(message);
       } else {
-        Toast.info('New order received');
+        const message = 'New order received';
+        Toast.info(message);
+        showDashboardOrderPopup(message);
       }
 
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
