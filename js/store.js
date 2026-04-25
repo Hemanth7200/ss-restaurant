@@ -13,6 +13,7 @@ const Store = {
   _listeners: [],
   _dbLoaded: false,
   _storageListenerReady: false,
+  _realtimeReady: false,
 
   async init() {
     // 1. Load shared browser state + tab-scoped session state.
@@ -45,6 +46,7 @@ const Store = {
     }
 
     this._listenForTabSync();
+    this._startRealtimeSync();
   },
 
   async _loadFromDB() {
@@ -200,10 +202,49 @@ const Store = {
         this._ensureDefaults();
         this._notify('orders');
         this._notify('tables');
+        this._enforceTableLockForCurrentSession();
       } catch (e) {
         console.warn('Failed to sync state from another tab:', e);
       }
     });
+  },
+
+  _startRealtimeSync() {
+    if (!DB_ENABLED || this._realtimeReady) return;
+    this._realtimeReady = true;
+
+    DB.subscribeToTables(async () => {
+      const tables = await DB.getTables();
+      if (!tables) return;
+      this._state.tables = tables;
+      this._persist();
+      this._notify('tables');
+      this._enforceTableLockForCurrentSession();
+    });
+
+    DB.subscribeToOrders(async () => {
+      const orders = await DB.getOrders();
+      if (!orders) return;
+      this._state.orders = orders;
+      this._persist();
+      this._notify('orders');
+    });
+  },
+
+  _enforceTableLockForCurrentSession() {
+    const session = this._state.currentSession;
+    if (!session || session.tableLocked) return;
+
+    const table = this._state.tables.find(t => t.id === session.tableId);
+    if (!table || table.status !== 'occupied') return;
+
+    this.set('currentSession', null);
+    Toast.error('This table order has already been placed. Please choose another table.');
+
+    const customerPages = ['/menu', '/cart', '/details', '/confirmation', '/payment'];
+    if (Router && customerPages.includes(Router.currentRoute)) {
+      Router.navigate('/');
+    }
   },
 
   _notify(key) {
@@ -232,24 +273,12 @@ const Store = {
       return null;
     }
 
-    // Check local state quickly first
+    // Allow users to browse a table until first order is placed.
+    // Block only if table is already locked/occupied.
     const localTable = this._state.tables.find(t => t.id === tableId);
-    if (localTable && localTable.status === 'occupied') {
-      const resumed = await this.resumeSessionForTable(tableId);
-      if (resumed) return resumed;
-      Toast.error('This table is already occupied. Please ask staff for help.');
+    if (localTable && localTable.status !== 'available') {
+      Toast.error('This table order has already been placed. Please choose another table.');
       return null;
-    }
-
-    // Atomic DB Check: Attempt to update table status to 'occupied' ONLY IF it is currently 'available'
-    if (DB_ENABLED) {
-      const locked = await DB.updateTableStatus(tableId, 'occupied', 'available');
-      if (!locked) {
-        const resumed = await this.resumeSessionForTable(tableId);
-        if (resumed) return resumed;
-        Toast.error('This table was just taken by someone else!');
-        return null;
-      }
     }
 
     const sessionId = 'sess-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
@@ -262,15 +291,12 @@ const Store = {
       currentStep: 'menu',
       startedAt: new Date().toISOString(),
       status: 'active',
+      tableLocked: false,
       paymentMethod: null,
       paid: false
     };
     
     this.set('currentSession', session);
-    // Mark table as occupied locally
-    this.update('tables', tables =>
-      tables.map(t => t.id === tableId ? { ...t, status: 'occupied' } : t)
-    );
     // Create session in DB
     await DB.createSession(session);
     return session;
@@ -298,6 +324,7 @@ const Store = {
       currentStep: 'menu',
       startedAt: dbSession.startedAt,
       status: dbSession.status || 'active',
+      tableLocked: true,
       paymentMethod: dbSession.paymentMethod || null,
       paid: dbSession.status === 'paid',
       paymentStatus: dbSession.status === 'paid' ? 'confirmed' : null
@@ -398,6 +425,29 @@ const Store = {
   async placeOrder(customerInfo, specialInstructions) {
     const session = this._state.currentSession;
     if (!session || session.cart.length === 0) return { success: false, error: 'Session not found or cart is empty' };
+
+    // First successful order claims the table atomically.
+    if (!session.tableLocked) {
+      const localTable = this._state.tables.find(t => t.id === session.tableId);
+      if (!DB_ENABLED && localTable && localTable.status !== 'available') {
+        this._enforceTableLockForCurrentSession();
+        return { success: false, error: 'This table order has already been placed. Please choose another table.' };
+      }
+
+      const lockAcquired = DB_ENABLED
+        ? await DB.updateTableStatus(session.tableId, 'occupied', 'available')
+        : true;
+
+      if (!lockAcquired) {
+        this._enforceTableLockForCurrentSession();
+        return { success: false, error: 'This table order has already been placed. Please choose another table.' };
+      }
+
+      await this.updateSession({ tableLocked: true });
+      this.update('tables', tables =>
+        tables.map(t => t.id === session.tableId ? { ...t, status: 'occupied' } : t)
+      );
+    }
 
     const subtotal = Number(session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
     const gst = Number((subtotal * GST_RATE).toFixed(2));
@@ -527,13 +577,19 @@ const Store = {
   async endSession() {
     const session = this._state.currentSession;
     if (!session) return;
-    // Release table
-    this.update('tables', tables =>
-      tables.map(t => t.id === session.tableId ? { ...t, status: 'available' } : t)
-    );
-    // Sync to DB
+
+    // Release table only for sessions that had actually claimed it.
+    if (session.tableLocked) {
+      this.update('tables', tables =>
+        tables.map(t => t.id === session.tableId ? { ...t, status: 'available' } : t)
+      );
+      if (DB_ENABLED) {
+        await DB.updateTableStatus(session.tableId, 'available');
+      }
+    }
+
+    // Sync session closure to DB
     if (DB_ENABLED) {
-      await DB.updateTableStatus(session.tableId, 'available');
       await DB.updateSession(session.id, { status: 'closed', ended: true });
     }
     this.set('currentSession', null);
