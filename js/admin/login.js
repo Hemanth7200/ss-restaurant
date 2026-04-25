@@ -41,10 +41,11 @@ function renderAdminLogin() {
     if (e.key === 'Enter') doLogin();
   });
 
-  function doLogin() {
+  async function doLogin() {
     const email = document.getElementById('admin-email').value.trim();
     const password = document.getElementById('admin-password').value;
     const errorEl = document.getElementById('login-error');
+    const btn = document.getElementById('admin-login-btn');
 
     if (!email || !password) {
       errorEl.textContent = 'Please enter both email and password';
@@ -52,12 +53,19 @@ function renderAdminLogin() {
       return;
     }
 
-    if (Store.adminLogin(email, password)) {
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="spinner"></div>';
+    btn.disabled = true;
+    errorEl.style.display = 'none';
+
+    if (await Store.adminLogin(email, password)) {
       Toast.success('Welcome back!');
       Router.navigate('/admin/dashboard');
     } else {
       errorEl.textContent = 'Invalid email or password';
       errorEl.style.display = 'block';
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
   }
 }

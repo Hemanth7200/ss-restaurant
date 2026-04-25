@@ -28,18 +28,29 @@ const Store = {
 
     // 3. If Supabase is connected, load fresh data from DB
     if (DB_ENABLED) {
+      const dbSession = await DB.getAdminSession();
+      if (dbSession && dbSession.user) {
+        this.set('adminAuth', {
+          id: dbSession.user.id,
+          email: dbSession.user.email,
+          role: 'Admin'
+        });
+      } else {
+        this.set('adminAuth', null);
+      }
       await this._loadFromDB();
     }
   },
 
   async _loadFromDB() {
     try {
-      const [categories, menuItems, tables, adminUsers, orders] = await Promise.all([
+      const [categories, menuItems, tables, adminUsers, orders, sessions] = await Promise.all([
         DB.getCategories(),
         DB.getMenuItems(),
         DB.getTables(),
         DB.getAdminUsers(),
-        DB.getOrders()
+        DB.getOrders(),
+        DB.getSessions()
       ]);
 
       if (categories) this._state.categories = categories;
@@ -47,6 +58,7 @@ const Store = {
       if (tables) this._state.tables = tables;
       if (adminUsers) this._state.adminUsers = adminUsers;
       if (orders) this._state.orders = orders;
+      if (sessions) this._state.sessions = sessions;
 
       // Update nextOrderId based on DB
       if (orders && orders.length > 0) {
@@ -68,7 +80,7 @@ const Store = {
     if (!this._state.tables) this._state.tables = [...DEFAULT_TABLES];
     if (!this._state.adminUsers) this._state.adminUsers = [...DEFAULT_ADMIN_USERS];
     if (!this._state.orders) this._state.orders = [];
-    if (!this._state.sessions) this._state.sessions = {};
+    if (!this._state.sessions) this._state.sessions = [];
     if (!this._state.reviews) this._state.reviews = [];
     if (this._state.nextOrderId === undefined) this._state.nextOrderId = STARTING_ORDER_ID;
     if (!this._state.currentSession) this._state.currentSession = null;
@@ -83,7 +95,7 @@ const Store = {
       tables: JSON.parse(JSON.stringify(DEFAULT_TABLES)),
       adminUsers: JSON.parse(JSON.stringify(DEFAULT_ADMIN_USERS)),
       orders: [],
-      sessions: {},
+      sessions: [],
       reviews: [],
       nextOrderId: STARTING_ORDER_ID,
       currentSession: null,
@@ -133,29 +145,20 @@ const Store = {
 
   // ---- Session Helpers ----
   async startSession(tableId) {
-    // CRITICAL: Check DB for real-time table status to prevent duplicate sessions
-    if (DB_ENABLED) {
-      try {
-        const freshTables = await DB.getTables();
-        if (freshTables) {
-          const freshTable = freshTables.find(t => t.id === tableId);
-          if (freshTable && freshTable.status === 'occupied') {
-            Toast.error('This table is already occupied by another customer!');
-            return null;
-          }
-          // Update local tables with fresh DB data
-          this._state.tables = freshTables;
-        }
-      } catch (e) {
-        console.error('Failed to verify table status:', e);
-      }
-    }
-
-    // Also check local state
+    // Check local state quickly first
     const localTable = this._state.tables.find(t => t.id === tableId);
     if (localTable && localTable.status === 'occupied') {
       Toast.error('This table is already occupied!');
       return null;
+    }
+
+    // Atomic DB Check: Attempt to update table status to 'occupied' ONLY IF it is currently 'available'
+    if (DB_ENABLED) {
+      const locked = await DB.updateTableStatus(tableId, 'occupied', 'available');
+      if (!locked) {
+        Toast.error('This table was just taken by someone else!');
+        return null;
+      }
     }
 
     const sessionId = 'sess-' + Date.now();
@@ -171,14 +174,14 @@ const Store = {
       paymentMethod: null,
       paid: false
     };
+    
     this.set('currentSession', session);
-    // Mark table as occupied
+    // Mark table as occupied locally
     this.update('tables', tables =>
       tables.map(t => t.id === tableId ? { ...t, status: 'occupied' } : t)
     );
-    // Sync to DB
+    // Create session in DB
     DB.createSession(session);
-    DB.updateTableStatus(tableId, 'occupied');
     return session;
   },
 
@@ -342,20 +345,32 @@ const Store = {
   confirmPayment(sessionId) {
     // If it's the current session
     const session = this._state.currentSession;
+    let tableId = null;
+    
     if (session && session.id === sessionId) {
       session.paymentStatus = 'confirmed';
       session.paid = true;
+      tableId = session.tableId;
       this.set('currentSession', session);
     }
-    // Also update in sessions map if exists
-    if (this._state.sessions && this._state.sessions[sessionId]) {
-      this._state.sessions[sessionId].paymentStatus = 'confirmed';
-      this._state.sessions[sessionId].paid = true;
+    // Update in sessions array if exists
+    if (this._state.sessions) {
+      const s = this._state.sessions.find(s => s.id === sessionId);
+      if (s) {
+        s.status = 'paid';
+        tableId = tableId || s.tableId;
+      }
     }
     this._persist();
     this._notify('currentSession');
+    
     // Sync to DB
-    DB.updateSession(sessionId, { paymentStatus: 'confirmed', paid: true });
+    DB.updateSession(sessionId, { status: 'paid' });
+    
+    // Release the table automatically
+    if (tableId) {
+      this.releaseTable(tableId);
+    }
   },
 
   rejectPayment(sessionId) {
@@ -365,13 +380,16 @@ const Store = {
       session.paid = false;
       this.set('currentSession', session);
     }
-    if (this._state.sessions && this._state.sessions[sessionId]) {
-      this._state.sessions[sessionId].paymentStatus = 'failed';
-      this._state.sessions[sessionId].paid = false;
+    if (this._state.sessions) {
+      const s = this._state.sessions.find(s => s.id === sessionId);
+      if (s) {
+        s.status = 'active';
+        s.paymentMethod = null;
+      }
     }
     this._persist();
     this._notify('currentSession');
-    DB.updateSession(sessionId, { paymentStatus: 'failed', paid: false });
+    DB.updateSession(sessionId, { status: 'active', paymentMethod: null });
   },
 
   getActivePaymentSessions() {
@@ -395,19 +413,29 @@ const Store = {
     this.set('currentSession', null);
   },
 
-  // ---- Admin Helpers ----
-  adminLogin(email, password) {
-    const user = this._state.adminUsers.find(
-      u => u.email === email && u.password === password
-    );
-    if (user) {
-      this.set('adminAuth', { id: user.id, name: user.name, email: user.email, role: user.role });
+  // ---- Admin Helpers (Secure Auth) ----
+  async adminLogin(email, password) {
+    if (DB_ENABLED) {
+      const { data, error } = await DB.adminLogin(email, password);
+      if (error || !data.session) return false;
+      this.set('adminAuth', { 
+        id: data.user.id, 
+        email: data.user.email, 
+        role: 'Admin' 
+      });
       return true;
+    } else {
+      // Fallback for local development ONLY (Do NOT use in production)
+      // We will reject this since the requirement says remove hardcoded frontend auth.
+      console.error("Local auth is disabled for security. Connect to Supabase.");
+      return false;
     }
-    return false;
   },
 
-  adminLogout() {
+  async adminLogout() {
+    if (DB_ENABLED) {
+      await DB.adminLogout();
+    }
     this.set('adminAuth', null);
   },
 

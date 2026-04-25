@@ -117,10 +117,19 @@ const DB = {
     if (error) console.error('DB upsertTable:', error);
   },
 
-  async updateTableStatus(id, status) {
-    if (!DB_ENABLED) return;
-    const { error } = await supabaseClient.from('tables').update({ status }).eq('id', id);
-    if (error) console.error('DB updateTableStatus:', error);
+  async updateTableStatus(id, status, expectedStatus = null) {
+    if (!DB_ENABLED) return true; // Local mode always "succeeds" immediately
+    let query = supabaseClient.from('tables').update({ status }).eq('id', id);
+    if (expectedStatus) {
+      query = query.eq('status', expectedStatus);
+    }
+    // Return updated rows to confirm atomicity
+    const { data, error } = await query.select();
+    if (error) { 
+      console.error('DB updateTableStatus:', error); 
+      return false; 
+    }
+    return data && data.length > 0;
   },
 
   async deleteTable(id) {
@@ -270,28 +279,30 @@ const DB = {
     if (error) console.error('DB updateOrderStatus:', error);
   },
 
-  // ---- Admin Users ----
-  async getAdminUsers() {
+  // ---- Admin Users (Migrated to Supabase Auth) ----
+  async adminLogin(email, password) {
+    if (!DB_ENABLED) return { error: { message: 'Database not connected' } };
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) { console.error('DB adminLogin error:', error); return { error }; }
+    return { data };
+  },
+
+  async adminLogout() {
+    if (!DB_ENABLED) return;
+    await supabaseClient.auth.signOut();
+  },
+
+  async getAdminSession() {
     if (!DB_ENABLED) return null;
-    const { data, error } = await supabaseClient.from('admin_users').select('*');
-    if (error) { console.error('DB getAdminUsers:', error); return null; }
-    return data.map(u => ({
-      id: u.id, name: u.name, email: u.email, password: u.password, role: u.role
-    }));
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) return null;
+    return data.session;
   },
 
-  async upsertAdminUser(user) {
-    if (!DB_ENABLED) return;
-    const { error } = await supabaseClient.from('admin_users').upsert({
-      id: user.id, name: user.name, email: user.email, password: user.password, role: user.role
-    });
-    if (error) console.error('DB upsertAdminUser:', error);
-  },
-
-  async deleteAdminUser(id) {
-    if (!DB_ENABLED) return;
-    const { error } = await supabaseClient.from('admin_users').delete().eq('id', id);
-    if (error) console.error('DB deleteAdminUser:', error);
+  // Legacy fallback to get user roles if stored in a separate table, but returning dummy here 
+  // since Supabase Auth handles the secure session.
+  async getAdminUsers() {
+    return [];
   },
 
   // ---- Reviews ----

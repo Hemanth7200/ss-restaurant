@@ -84,20 +84,20 @@ function renderCart() {
           </div>
         ` : ''}
 
-        ${cart.length > 0 ? `
+        ${cart.length > 0 || prevOrders.length > 0 ? `
           <div class="bill-summary">
-            <h4>Bill Summary</h4>
+            <h4>${prevOrders.length > 0 ? 'Running Bill Summary' : 'Bill Summary'}</h4>
             <div class="bill-row">
               <span>Subtotal</span>
-              <span>${Utils.formatPrice(totals.subtotal)}</span>
+              <span>${Utils.formatPrice(Store.getSessionTotal().subtotal)}</span>
             </div>
             <div class="bill-row">
               <span>GST (5%)</span>
-              <span>${Utils.formatPrice(totals.gst)}</span>
+              <span>${Utils.formatPrice(Store.getSessionTotal().gst)}</span>
             </div>
             <div class="bill-row total">
-              <span>Total</span>
-              <span>${Utils.formatPrice(totals.total)}</span>
+              <span>Grand Total</span>
+              <span>${Utils.formatPrice(Store.getSessionTotal().total)}</span>
             </div>
           </div>
         ` : ''}

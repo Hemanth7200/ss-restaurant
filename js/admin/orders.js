@@ -40,15 +40,14 @@ function renderAdminOrders() {
           <div class="orders-grid">
             ${orders.map(order => {
               // Find session for this order to check payment status
-              const session = Store.getCurrentSession();
-              const isSessionOrder = session && session.orders && session.orders.includes(order.id);
-              const paymentMethod = isSessionOrder ? session.paymentMethod : null;
-              const paymentStatus = isSessionOrder ? session.paymentStatus : null;
-              const isPaid = isSessionOrder ? session.paid : false;
+              const sessions = Store.get('sessions') || [];
+              const session = sessions.find(s => s.id === order.sessionId);
+              const paymentMethod = session ? session.paymentMethod : null;
+              const isPaid = session ? session.status === 'paid' || session.status === 'closed' : false;
 
               let paymentBadge = '';
               if (paymentMethod) {
-                if (isPaid || paymentStatus === 'confirmed') {
+                if (isPaid) {
                   paymentBadge = `<span class="badge badge-success" style="margin-left:6px;">Paid (${paymentMethod === 'upi' ? 'UPI' : 'Cash'})</span>`;
                 } else {
                   paymentBadge = `<span class="badge badge-warning" style="margin-left:6px;">Pending Payment</span>`;
@@ -56,9 +55,6 @@ function renderAdminOrders() {
               }
 
               let paymentAction = '';
-              if (isSessionOrder && paymentMethod === 'cash' && !isPaid && paymentStatus !== 'confirmed') {
-                 paymentAction = `<button class="btn btn-sm btn-success" onclick="adminConfirmPayment('${session.id}')">💵 Mark Cash Received</button>`;
-              }
 
               return `
               <div class="order-card">
@@ -157,7 +153,7 @@ function renderAdminOrders() {
         // Only refresh if not actively searching/typing
         if (searchInput && document.activeElement !== searchInput && filterStatus === 'all') {
            if (DB_ENABLED) {
-             await Promise.all([DB.getOrders(), DB.getSessions()]);
+             await Store.refreshFromDB();
            }
            render();
         }
@@ -171,11 +167,5 @@ function renderAdminOrders() {
 function adminUpdateOrder(orderId, status) {
   Store.updateOrderStatus(orderId, status);
   Toast.success(`Order #${orderId} marked as ${status}`);
-  renderAdminOrders();
-}
-
-function adminConfirmPayment(sessionId) {
-  Store.confirmPayment(sessionId);
-  Toast.success('Payment confirmed! Customer has been notified.');
   renderAdminOrders();
 }

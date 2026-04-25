@@ -13,15 +13,31 @@ function renderLanding() {
     const table = tables.find(t => t.number === parseInt(query.table));
     if (table) {
       const currentSession = Store.getCurrentSession();
+      
       // If we already have an active session for THIS exact table, just resume it
       if (currentSession && currentSession.tableId === table.id) {
         Router.navigate('/' + (currentSession.currentStep || 'menu'));
         return;
       }
       
-      // Otherwise, start a new session for this table, forcing the redirect
+      // If they have an active session for a DIFFERENT table, block them!
+      if (currentSession && currentSession.tableId !== table.id) {
+        Toast.error("You already have an active order for Table " + Utils.getTableNumber(currentSession.tableId) + ". Please complete it first.");
+        Router.navigate('/' + (currentSession.currentStep || 'menu'));
+        return;
+      }
+      
+      // Render a loading state while attempting to lock the table atomically
+      app.innerHTML = '<div style="display:flex;min-height:100vh;align-items:center;justify-content:center"><div class="spinner lg"></div></div>';
+      
       Store.startSession(table.id).then(session => {
-        if (session) Router.navigate('/menu');
+        if (session) {
+          Router.navigate('/menu');
+        } else {
+          // If start session failed (e.g. table occupied by someone else), reset URL and render landing
+          window.location.hash = '#/';
+          renderLanding();
+        }
       });
       return;
     }
