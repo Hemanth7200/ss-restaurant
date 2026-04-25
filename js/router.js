@@ -37,7 +37,16 @@ const Router = {
     }
 
     if (!handler) {
-      handler = this.routes['/'] || (() => {});
+      handler = () => {
+        document.getElementById('app').innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px;">
+            <h1 style="font-size:4rem;margin-bottom:10px;color:var(--primary-color);">404</h1>
+            <h2 style="margin-bottom:20px;">Page Not Found</h2>
+            <p style="color:var(--text-muted);margin-bottom:30px;">The page you are looking for doesn't exist or has been moved.</p>
+            <button class="btn btn-primary" onclick="Router.navigate('/')">Return to Home</button>
+          </div>
+        `;
+      };
     }
 
     // Route guards

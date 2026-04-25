@@ -46,7 +46,7 @@ function renderCart() {
               return `
                 <div class="cart-item">
                   <div class="cart-item-img ${isUrl ? 'has-photo' : ''}" style="${isUrl ? '' : `background: ${gradient}; display: flex; align-items: center; justify-content: center; font-size: 24px;`}">
-                    ${isUrl ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" />` : itemImage}
+                    ${isUrl ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" loading="lazy" onerror="this.onerror=null; this.src='assets/logo.png'; this.style.objectFit='contain';" />` : itemImage}
                   </div>
                   <div class="cart-item-info">
                     <div class="cart-item-name">${Utils.escapeHtml(item.name)}</div>

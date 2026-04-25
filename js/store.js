@@ -38,7 +38,13 @@ const Store = {
       } else {
         this.set('adminAuth', null);
       }
-      await this._loadFromDB();
+      this._loadFromDB().then(() => {
+        if (Router && Router.currentRoute === '/menu') {
+          // Re-render menu to clear skeletons
+          const evt = new Event('hashchange');
+          window.dispatchEvent(evt);
+        }
+      });
     }
   },
 
@@ -234,9 +240,9 @@ const Store = {
   getCartTotal() {
     const session = this._state.currentSession;
     if (!session) return { subtotal: 0, gst: 0, total: 0 };
-    const subtotal = session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const gst = Math.round(subtotal * GST_RATE);
-    return { subtotal, gst, total: subtotal + gst };
+    const subtotal = Number(session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+    const gst = Number((subtotal * GST_RATE).toFixed(2));
+    return { subtotal, gst, total: Number((subtotal + gst).toFixed(2)) };
   },
 
   getSessionTotal() {
@@ -248,8 +254,9 @@ const Store = {
       if (order) subtotal += order.subtotal;
     });
     subtotal += session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const gst = Math.round(subtotal * GST_RATE);
-    return { subtotal, gst, total: subtotal + gst };
+    subtotal = Number(subtotal.toFixed(2));
+    const gst = Number((subtotal * GST_RATE).toFixed(2));
+    return { subtotal, gst, total: Number((subtotal + gst).toFixed(2)) };
   },
 
   getFullSessionTotal() {
@@ -260,16 +267,18 @@ const Store = {
       const order = this._state.orders.find(o => o.id === orderId);
       if (order) subtotal += order.subtotal;
     });
-    const gst = Math.round(subtotal * GST_RATE);
-    return { subtotal, gst, total: subtotal + gst };
+    subtotal = Number(subtotal.toFixed(2));
+    const gst = Number((subtotal * GST_RATE).toFixed(2));
+    return { subtotal, gst, total: Number((subtotal + gst).toFixed(2)) };
   },
 
   async placeOrder(customerInfo, specialInstructions) {
     const session = this._state.currentSession;
     if (!session || session.cart.length === 0) return null;
 
-    const subtotal = session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const gst = Math.round(subtotal * GST_RATE);
+    const subtotal = Number(session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+    const gst = Number((subtotal * GST_RATE).toFixed(2));
+    const total = Number((subtotal + gst).toFixed(2));
     
     let orderId = this._state.nextOrderId;
     let finalOrder = null;
@@ -292,7 +301,7 @@ const Store = {
         specialInstructions: specialInstructions || '',
         subtotal: subtotal,
         gst: gst,
-        total: subtotal + gst,
+        total: total,
         status: 'new',
         createdAt: new Date().toISOString()
       };

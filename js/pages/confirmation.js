@@ -385,10 +385,15 @@ function renderReview() {
       <button class="btn btn-primary btn-full btn-lg" id="submit-review">
         Submit Review
       </button>
-
-      <button class="btn btn-ghost btn-full" id="skip-review" style="margin-top: var(--space-md);">
-        Skip
-      </button>
+      
+      <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
+        <button class="btn btn-secondary" style="flex:1;" id="download-receipt">
+          📥 Download Receipt
+        </button>
+        <button class="btn btn-ghost" style="flex:1;" id="skip-review">
+          Skip
+        </button>
+      </div>
     </div>
   `;
 
@@ -421,5 +426,38 @@ function renderReview() {
     Store.endSession();
     Toast.info('Thank you for visiting SS Restaurant!');
     Router.navigate('/');
+  });
+
+  document.getElementById('download-receipt').addEventListener('click', () => {
+    const totals = Store.getFullSessionTotal();
+    const tableNum = Utils.getTableNumber(session.tableId);
+    let text = `SS Restaurant - Receipt\n`;
+    text += `Table: ${tableNum}\n`;
+    text += `Date: ${Utils.formatDateTime(new Date().toISOString())}\n`;
+    text += `--------------------------------\n`;
+    session.orders.forEach(orderId => {
+      const order = Store.get('orders').find(o => o.id === orderId);
+      if (order) {
+        order.items.forEach(item => {
+          text += `${item.name} x${item.quantity}   ${Utils.formatPrice(item.price * item.quantity)}\n`;
+        });
+      }
+    });
+    text += `--------------------------------\n`;
+    text += `Subtotal:    ${Utils.formatPrice(totals.subtotal)}\n`;
+    text += `GST (5%):    ${Utils.formatPrice(totals.gst)}\n`;
+    text += `Grand Total: ${Utils.formatPrice(totals.total)}\n`;
+    text += `\nThank you for dining with us!\n`;
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SS_Restaurant_Receipt_Table_${tableNum}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Toast.success('Receipt downloaded!');
   });
 }

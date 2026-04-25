@@ -83,8 +83,14 @@ function renderDetails() {
 
     // Validate name
     const nameErr = document.getElementById('name-error');
+    const nameRegex = /^[A-Za-z\s]{2,50}$/;
     if (!name || name.length < 2) {
       nameErr.textContent = 'Please enter your name';
+      nameErr.style.display = 'block';
+      document.getElementById('input-name').classList.add('error');
+      valid = false;
+    } else if (!nameRegex.test(name)) {
+      nameErr.textContent = 'Name can only contain letters and spaces';
       nameErr.style.display = 'block';
       document.getElementById('input-name').classList.add('error');
       valid = false;
