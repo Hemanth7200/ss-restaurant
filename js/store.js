@@ -187,7 +187,7 @@ const Store = {
       tables.map(t => t.id === tableId ? { ...t, status: 'occupied' } : t)
     );
     // Create session in DB
-    DB.createSession(session);
+    await DB.createSession(session);
     return session;
   },
 
@@ -195,11 +195,14 @@ const Store = {
     return this._state.currentSession;
   },
 
-  updateSession(updates) {
+  async updateSession(updates) {
     const session = this._state.currentSession;
     if (!session) return;
     Object.assign(session, updates);
     this.set('currentSession', session);
+    if (DB_ENABLED) {
+      await DB.updateSession(session.id, updates);
+    }
   },
 
   addToCart(menuItem) {
@@ -324,30 +327,22 @@ const Store = {
         break;
       }
     }
-
-    if (!orderSuccess) {
-      return null;
-    }
-
-    this.update('orders', orders => [...orders, finalOrder]);
-    this.set('nextOrderId', finalOrder.id + 1);
-
-    // Update session
-    session.orders.push(finalOrder.id);
-    session.customerInfo = customerInfo;
-    session.cart = [];
-    session.currentStep = 'confirmation';
-    this.set('currentSession', session);
-
-    // Sync session to DB
-    if (DB_ENABLED) {
-      DB.updateSession(session.id, {
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone
+    if (orderSuccess && finalOrder) {
+      // Update local state
+      this.update('orders', orders => [...orders, finalOrder]);
+      this.update('nextOrderId', id => Math.max(id, finalOrder.id + 1));
+      
+      // Update session and clear cart
+      await this.updateSession({ 
+        cart: [], 
+        orders: [...session.orders, finalOrder.id],
+        customerInfo: customerInfo 
       });
+
+      return finalOrder;
     }
 
-    return finalOrder;
+    return null;
   },
 
   // ---- Payment Helpers ----
@@ -409,7 +404,7 @@ const Store = {
     return [];
   },
 
-  endSession() {
+  async endSession() {
     const session = this._state.currentSession;
     if (!session) return;
     // Release table
@@ -417,8 +412,10 @@ const Store = {
       tables.map(t => t.id === session.tableId ? { ...t, status: 'available' } : t)
     );
     // Sync to DB
-    DB.updateTableStatus(session.tableId, 'available');
-    DB.updateSession(session.id, { status: 'closed', ended: true });
+    if (DB_ENABLED) {
+      await DB.updateTableStatus(session.tableId, 'available');
+      await DB.updateSession(session.id, { status: 'closed', ended: true });
+    }
     this.set('currentSession', null);
   },
 
