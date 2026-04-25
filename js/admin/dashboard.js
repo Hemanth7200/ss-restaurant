@@ -3,7 +3,9 @@
    ============================================ */
 
 function renderAdminDashboard() {
-  let chartRange = '7days'; // 7days, 1month, 1year
+  let chartRange = '7days'; // 7days, 1month, 1year, custom
+  let customStartDate = '';
+  let customEndDate = '';
   let lastKnownMaxOrderId = Store.get('orders').length > 0 ? Math.max(...Store.get('orders').map(o => o.id)) : 0;
 
   function showDashboardOrderPopup(message) {
@@ -75,6 +77,46 @@ function renderAdminDashboard() {
           value: monthRevenue
         });
       }
+    } else if (chartRange === 'custom' && customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate);
+      end.setHours(23, 59, 59, 999);
+      
+      const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 31) {
+        // Daily breakdown
+        for (let i = 0; i < diffDays; i++) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          const dateStr = d.toISOString().split('T')[0];
+          const dayOrders = allOrders.filter(o => o.createdAt.startsWith(dateStr));
+          const dayRevenue = dayOrders.reduce((sum, o) => sum + o.total, 0);
+          chartData.push({
+            label: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+            value: dayRevenue
+          });
+        }
+      } else {
+        // Weekly breakdown
+        let current = new Date(start);
+        while (current <= end) {
+          const periodStart = new Date(current);
+          const periodEnd = new Date(current);
+          periodEnd.setDate(periodEnd.getDate() + 7);
+          
+          const periodOrders = allOrders.filter(o => {
+            const d = new Date(o.createdAt);
+            return d >= periodStart && d < (periodEnd > end ? end : periodEnd);
+          });
+          const periodRevenue = periodOrders.reduce((sum, o) => sum + o.total, 0);
+          chartData.push({
+            label: periodStart.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+            value: periodRevenue
+          });
+          current.setDate(current.getDate() + 7);
+        }
+      }
     }
 
     const maxRevenue = Math.max(...chartData.map(d => d.value), 1);
@@ -108,11 +150,21 @@ function renderAdminDashboard() {
       <div class="chart-container" style="margin-bottom: var(--space-2xl);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
           <h3>Revenue Overview</h3>
-          <select id="chart-range-select" class="form-input" style="width: auto; padding: 4px 12px; font-size: 14px;">
-            <option value="7days" ${chartRange === '7days' ? 'selected' : ''}>Last 7 Days</option>
-            <option value="1month" ${chartRange === '1month' ? 'selected' : ''}>Last 1 Month</option>
-            <option value="1year" ${chartRange === '1year' ? 'selected' : ''}>Last 1 Year</option>
-          </select>
+          <div style="display: flex; align-items: center; gap: var(--space-md);">
+            ${chartRange === 'custom' ? `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="date" id="custom-start-date" class="form-input" value="${customStartDate}" style="padding: 4px 8px; font-size: 13px; width: auto;">
+                <span style="color: var(--text-muted); font-size: 12px;">to</span>
+                <input type="date" id="custom-end-date" class="form-input" value="${customEndDate}" style="padding: 4px 8px; font-size: 13px; width: auto;">
+              </div>
+            ` : ''}
+            <select id="chart-range-select" class="form-input" style="width: auto; padding: 4px 12px; font-size: 14px;">
+              <option value="7days" ${chartRange === '7days' ? 'selected' : ''}>Last 7 Days</option>
+              <option value="1month" ${chartRange === '1month' ? 'selected' : ''}>Last 1 Month</option>
+              <option value="1year" ${chartRange === '1year' ? 'selected' : ''}>Last 1 Year</option>
+              <option value="custom" ${chartRange === 'custom' ? 'selected' : ''}>Custom Range</option>
+            </select>
+          </div>
         </div>
         <div class="bar-chart">
           ${chartData.map(d => `
@@ -172,6 +224,17 @@ function renderAdminDashboard() {
       chartRange = e.target.value;
       renderDashboardContent(container);
     });
+
+    if (chartRange === 'custom') {
+      document.getElementById('custom-start-date').addEventListener('change', (e) => {
+        customStartDate = e.target.value;
+        if (customEndDate) renderDashboardContent(container);
+      });
+      document.getElementById('custom-end-date').addEventListener('change', (e) => {
+        customEndDate = e.target.value;
+        if (customStartDate) renderDashboardContent(container);
+      });
+    }
   }
 
   renderAdminLayout('Dashboard', (container) => {

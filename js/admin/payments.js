@@ -3,6 +3,8 @@
    ============================================ */
 
 function renderAdminPayments() {
+  let filterDate = ''; // YYYY-MM-DD
+
   renderAdminLayout('Pending Payments', (container) => {
 
     async function render() {
@@ -14,18 +16,32 @@ function renderAdminPayments() {
          dbSessions = Store.get('sessions') || []; // Fallback
       }
 
-      // Find sessions that have a paymentMethod selected but are not yet 'paid'
-      const pendingSessions = dbSessions.filter(s => s.paymentMethod && s.status !== 'paid' && s.status !== 'closed');
-      
-      const allOrders = Store.get('orders').slice().reverse();
-
       let html = `
-        <div style="margin-bottom: var(--space-xl);">
-          <p style="color: var(--text-muted); font-size: var(--font-size-sm);">
-            Confirm or reject payments from customers. Both Cash and UPI payments require your confirmation.
-          </p>
+        <div style="margin-bottom: var(--space-xl); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--space-md);">
+          <div>
+            <p style="color: var(--text-muted); font-size: var(--font-size-sm);">
+              Confirm or reject payments from customers. Both Cash and UPI payments require your confirmation.
+            </p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Filter by Date</label>
+            <input type="date" id="payments-date-filter" class="form-input" value="${filterDate}" style="width: auto; padding: 6px 12px;">
+          </div>
         </div>
       `;
+
+      // Find sessions that have a paymentMethod selected but are not yet 'paid'
+      let pendingSessions = dbSessions.filter(s => s.paymentMethod && s.status !== 'paid' && s.status !== 'closed');
+      
+      const allOrders = Store.get('orders') || [];
+      let filteredHistory = allOrders.slice();
+      
+      if (filterDate) {
+        pendingSessions = pendingSessions.filter(s => s.startedAt && s.startedAt.startsWith(filterDate));
+        filteredHistory = filteredHistory.filter(o => o.createdAt && o.createdAt.startsWith(filterDate));
+      }
+      
+      filteredHistory = filteredHistory.reverse(); // Newest first after filtering
 
       if (pendingSessions.length === 0) {
         html += `
@@ -126,11 +142,12 @@ function renderAdminPayments() {
                   <th>Customer Name</th>
                   <th>Total Amount</th>
                   <th>Status</th>
-                  <th>Date & Time</th>
+                  <th>Date</th>
+                  <th>Time</th>
                 </tr>
               </thead>
               <tbody>
-                ${allOrders.slice(0, 20).map(o => `
+                ${filteredHistory.slice(0, 50).map(o => `
                   <tr>
                     <td><strong>${Utils.escapeHtml(o.customerPhone || 'N/A')}</strong></td>
                     <td>#${o.id}</td>
@@ -138,6 +155,7 @@ function renderAdminPayments() {
                     <td>${Utils.escapeHtml(o.customerName)}</td>
                     <td><strong>${Utils.formatPrice(o.total)}</strong></td>
                     <td><span class="badge ${Utils.getStatusBadgeClass(o.status)}">${Utils.getStatusLabel(o.status)}</span></td>
+                    <td>${Utils.formatDate(o.createdAt)}</td>
                     <td>${Utils.formatTime(o.createdAt)}</td>
                   </tr>
                 `).join('')}
@@ -167,6 +185,15 @@ function renderAdminPayments() {
           render();
         });
       });
+
+      // Bind filter
+      const filterInput = container.querySelector('#payments-date-filter');
+      if (filterInput) {
+        filterInput.addEventListener('change', (e) => {
+          filterDate = e.target.value;
+          render();
+        });
+      }
     }
 
     render();
