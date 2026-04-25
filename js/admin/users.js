@@ -98,7 +98,7 @@ function showUserModal(editId) {
   overlay.querySelector('#modal-cancel-btn').addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
-  overlay.querySelector('#modal-save-btn').addEventListener('click', () => {
+  overlay.querySelector('#modal-save-btn').addEventListener('click', async () => {
     const name = document.getElementById('usr-name').value.trim();
     const email = document.getElementById('usr-email').value.trim();
     const password = document.getElementById('usr-password').value;
@@ -107,21 +107,27 @@ function showUserModal(editId) {
     if (!name || !email) { Toast.error('Name and email are required'); return; }
     if (!user && !password) { Toast.error('Password is required for new users'); return; }
 
-    if (user) {
-      const updated = { ...user, name, email, role, password: password || user.password };
-      Store.update('adminUsers', users => users.map(u =>
-        u.id === editId ? updated : u
-      ));
-      DB.upsertAdminUser(updated);
-      Toast.success('User updated');
-    } else {
-      const newUser = { id: Utils.generateId('admin'), name, email, password, role };
-      Store.update('adminUsers', users => [...users, newUser]);
-      DB.upsertAdminUser(newUser);
-      Toast.success('User added');
+    try {
+      if (user) {
+        const updated = { ...user, name, email, role, password: password || user.password };
+        Store.update('adminUsers', users => users.map(u =>
+          u.id === editId ? updated : u
+        ));
+        await DB.upsertAdminUser(updated);
+        Toast.success('User updated');
+      } else {
+        const newUser = { id: Utils.generateId('admin'), name, email, password, role };
+        Store.update('adminUsers', users => [...users, newUser]);
+        await DB.upsertAdminUser(newUser);
+        Toast.success('User added');
+      }
+    } catch (e) {
+      Toast.error('Unable to save admin user. Please try again.');
+      return;
     }
 
     close();
+    if (DB_ENABLED) await Store.refreshFromDB();
     if (window._refreshAdminUsers) window._refreshAdminUsers();
   });
 }

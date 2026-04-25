@@ -81,7 +81,7 @@ function renderAdminDashboard() {
     const recentOrders = Store.get('orders').slice(-10).reverse();
 
     container.innerHTML = `
-      <div class="dashboard-grid">
+      <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr);">
         <div class="stat-card">
           <div class="stat-card-info">
             <h4>Today's Orders</h4>

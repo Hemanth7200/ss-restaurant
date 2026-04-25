@@ -237,19 +237,22 @@
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .admin-topbar-right { display: none; }
   .data-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .data-table { table-layout: fixed; }
-  .data-table th,
-  .data-table td {
-    padding: 8px 6px;
-    font-size: 11px;
-    word-break: break-word;
-  }
-  .bar-chart { gap: 4px; }
 }
 
 @media (max-width: 480px) {
   .dashboard-grid { grid-template-columns: 1fr; }
   .admin-topbar { padding: 0 var(--space-base); }
+}
+
+/* Mobile landscape should behave like portrait sidebar mode */
+@media (orientation: landscape) and (max-height: 500px) {
+  .admin-sidebar { transform: translateX(-100%); }
+  .admin-sidebar.open { transform: translateX(0); }
+  .admin-main { margin-left: 0; }
+  .admin-mobile-toggle { display: flex; }
+  .admin-topbar-right { display: none; }
+  .admin-content { padding: var(--space-base); }
+  .data-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 
 /* ---- Admin overlay for mobile sidebar ---- */

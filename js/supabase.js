@@ -325,10 +325,38 @@ const DB = {
     return data.session;
   },
 
-  // Legacy fallback to get user roles if stored in a separate table, but returning dummy here 
-  // since Supabase Auth handles the secure session.
   async getAdminUsers() {
-    return [];
+    if (!DB_ENABLED) return null;
+    const { data, error } = await supabaseClient
+      .from('admin_users')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) { console.error('DB getAdminUsers:', error); return null; }
+    return data.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      password: u.password,
+      role: u.role
+    }));
+  },
+
+  async upsertAdminUser(user) {
+    if (!DB_ENABLED) return;
+    const { error } = await supabaseClient.from('admin_users').upsert({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      role: user.role || 'Admin'
+    });
+    if (error) console.error('DB upsertAdminUser:', error);
+  },
+
+  async deleteAdminUser(id) {
+    if (!DB_ENABLED) return;
+    const { error } = await supabaseClient.from('admin_users').delete().eq('id', id);
+    if (error) console.error('DB deleteAdminUser:', error);
   },
 
   // ---- Reviews ----
