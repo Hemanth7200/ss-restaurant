@@ -81,9 +81,9 @@ function renderAdminTables() {
 }
 
 function generateRealQR(canvas, tableNumber) {
-  // Construct the exact URL that points to the customer ordering page with this table parameter
+  // Construct the exact URL that points to the customer ordering page with this table parameter using hash routing
   const baseUrl = window.location.origin + window.location.pathname;
-  const targetUrl = `${baseUrl}?table=${tableNumber}`;
+  const targetUrl = `${baseUrl}#/?table=${tableNumber}`;
 
   // Use QRious library to render a functional QR code directly to the canvas
   new QRious({
