@@ -17,7 +17,7 @@ function renderMenu() {
   app.innerHTML = `
     <div class="menu-page">
       <header class="customer-header">
-        <div class="customer-header-left" style="cursor: pointer;" onclick="Router.navigate('/menu')">
+        <div class="customer-header-left" style="cursor: pointer;" onclick="Router.navigate('/')">
           <img src="assets/logo.png" alt="Logo" class="customer-header-logo" />
           <div>
             <div class="customer-header-title">SS Restaurant</div>
@@ -190,5 +190,4 @@ function updateMenuDOM() {
     window._menuRenderItems();
   }
 }
-
 
