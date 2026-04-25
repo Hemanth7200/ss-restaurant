@@ -8,10 +8,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
-  padding: 12px 24px;
-  font-size: 15px;
+  padding: 14px 28px;
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-full); /* Pill shape as per design */
+  border-radius: var(--radius-md);
   transition: all var(--transition-base);
   white-space: nowrap;
   cursor: pointer;
@@ -19,7 +19,7 @@
   line-height: 1;
 }
 
-.btn:active { transform: scale(0.98); }
+.btn:active { transform: scale(0.97); }
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -29,17 +29,18 @@
 .btn-primary {
   background: var(--color-primary);
   color: var(--text-inverse);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px var(--color-primary-glow);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 16px var(--color-primary-glow);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
   background: var(--bg-card);
   color: var(--text-primary);
-  border: 1.5px solid var(--border-color-dark);
+  border: 1.5px solid var(--border-color);
 }
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--color-primary);
@@ -56,26 +57,51 @@
   color: var(--text-primary);
 }
 
+.btn-danger {
+  background: var(--color-error);
+  color: var(--text-inverse);
+}
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: var(--text-inverse);
+}
+.btn-success:hover:not(:disabled) {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
 .btn-sm {
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 8px 14px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
 }
 
 .btn-lg {
-  padding: 16px 32px;
-  font-size: 16px;
+  padding: 14px 32px;
+  font-size: var(--font-size-md);
+  border-radius: var(--radius-lg);
 }
 
 .btn-full { width: 100%; }
 
 .btn-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.btn-icon.btn-sm {
+  width: 32px;
+  height: 32px;
 }
 
 /* ---- Cards ---- */
@@ -85,12 +111,11 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition: all var(--transition-base);
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
 .card-body {
@@ -101,12 +126,12 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-full);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 .badge-primary {
@@ -114,34 +139,53 @@
   color: var(--color-primary);
 }
 
+.badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.badge-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.badge-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
 .badge-veg {
-  background: #E8F5E9;
+  background: rgba(34, 197, 94, 0.1);
   color: var(--color-veg);
 }
 
 .badge-nonveg {
-  background: #FFEBEE;
+  background: rgba(239, 68, 68, 0.1);
   color: var(--color-nonveg);
 }
 
-/* ---- Veg/Non-Veg Indicator (Circular) ---- */
+/* ---- Veg/Non-Veg Indicator ---- */
 .veg-indicator {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 1.5px solid var(--color-veg);
-  border-radius: 50%; /* Circular as per design */
-  padding: 2.5px;
+  border-radius: 2px;
+  padding: 2px;
   margin-right: 6px;
-  background: white;
 }
 
 .veg-indicator::after {
   content: '';
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--color-veg);
 }
@@ -159,12 +203,12 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: 10px 20px;
-  font-size: 14px;
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-full);
   background: var(--bg-card);
-  border: 1px solid var(--border-color-dark);
+  border: 1.5px solid var(--border-color);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -172,15 +216,14 @@
 }
 
 .chip:hover {
-  background: var(--bg-input);
-  color: var(--text-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .chip.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--text-inverse);
-  box-shadow: 0 4px 10px var(--color-primary-glow);
 }
 
 /* ---- Inputs ---- */
@@ -198,11 +241,11 @@
 
 .form-input {
   width: 100%;
-  padding: 12px 20px;
+  padding: 12px 16px;
   background: var(--bg-input);
-  border: 1px solid var(--border-color-dark);
+  border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: 15px;
+  font-size: var(--font-size-base);
   color: var(--text-primary);
   transition: all var(--transition-fast);
 }
@@ -210,7 +253,7 @@
 .form-input:focus {
   border-color: var(--color-primary);
   background: var(--bg-card);
-  box-shadow: 0 0 0 4px var(--color-primary-glow);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .form-input::placeholder {
@@ -264,10 +307,10 @@ textarea.form-input {
 .qty-stepper {
   display: inline-flex;
   align-items: center;
-  background: var(--bg-card);
+  gap: var(--space-md);
+  background: var(--bg-input);
   padding: 4px;
   border-radius: var(--radius-full);
-  border: 1px solid var(--border-color-dark);
 }
 
 .qty-stepper button {
@@ -276,22 +319,23 @@ textarea.form-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--bg-card);
   color: var(--text-primary);
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
+  border-radius: 50%;
+  font-size: 16px;
+  box-shadow: var(--shadow-xs);
   transition: all var(--transition-fast);
 }
 
 .qty-stepper button:hover {
-  color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
 }
 
 .qty-stepper .qty-value {
-  min-width: 24px;
+  min-width: 20px;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
 }

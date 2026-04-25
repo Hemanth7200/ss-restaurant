@@ -1,49 +1,51 @@
 /* ============================================
    SS Restaurant — Design Tokens
-   Theme: Elegant Ivory & Gold
    ============================================ */
 
 :root {
-  /* ---- Colors: Elegant Ivory & Gold ---- */
-  --color-primary: #C2932E;         /* Rich Harvest Gold */
-  --color-primary-hover: #A67C27;   /* Deep Gold */
-  --color-primary-light: #FDF5E6;   /* Old Lace / Ivory Light */
-  --color-primary-glow: rgba(194, 147, 46, 0.15);
-  
-  --bg-main: #FCF8F1;               /* Soft Ivory Background */
-  --bg-card: #FFFFFF;               /* Pure White Cards */
-  --bg-input: #F7F1E9;              /* Subtle Ivory Input */
-  --bg-overlay: rgba(45, 36, 30, 0.4);
-  
-  --text-primary: #2D241E;          /* Dark Chocolate / Charcoal */
-  --text-secondary: #5C5248;        /* Warm Taupe */
-  --text-muted: #8E8377;            /* Soft Brown Gray */
-  --text-inverse: #FFFFFF;
-  
-  --border-color: #EFE6D9;          /* Delicate Ivory Border */
-  --border-color-dark: #DED0C0;     /* Warm Sand Border */
+  /* ---- Brand Colors ---- */
+  --color-primary: #1a4d2e; /* Deep Forest Green */
+  --color-primary-hover: #143d24;
+  --color-primary-light: #eaf2ed; /* Very Light Green */
+  --color-primary-glow: rgba(26, 77, 46, 0.15);
 
-  /* Semantic Colors */
-  --color-success: #2E7D32;
-  --color-success-bg: #F1F8F1;
-  --color-error: #D32F2F;
-  --color-error-bg: #FDF1F1;
-  --color-warning: #ED6C02;
-  --color-warning-bg: #FFF3E0;
-  --color-info: #0288D1;
-  --color-info-bg: #E1F5FE;
+  /* ---- Sidebar / Admin ---- */
+  --color-sidebar: #ffffff;
+  --color-sidebar-hover: #f0f7f2;
+  --color-sidebar-text: #6b7280;
+  --color-sidebar-text-active: #1a4d2e;
 
-  /* Veg / Non-Veg */
-  --color-veg: #2E7D32;
-  --color-nonveg: #D32F2F;
+  /* ---- Backgrounds ---- */
+  --bg-main: #f9f9f9;
+  --bg-card: #ffffff;
+  --bg-input: #f3f4f6;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
 
-  /* ---- Spacing & Radii ---- */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
+  /* ---- Text ---- */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
 
+  /* ---- Status ---- */
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fffbeb;
+  --color-error: #ef4444;
+  --color-error-bg: #fef2f2;
+  --color-info: #2563eb;
+  --color-info-bg: #eff6ff;
+
+  /* ---- Veg / Non-Veg ---- */
+  --color-veg: #16a34a;
+  --color-nonveg: #dc2626;
+
+  /* ---- Borders ---- */
+  --border-color: #f1f1f1;
+  --border-color-dark: #e5e7eb;
+
+  /* ---- Spacing ---- */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
@@ -51,23 +53,58 @@
   --space-lg: 20px;
   --space-xl: 24px;
   --space-2xl: 32px;
-  --space-3xl: 48px;
+  --space-3xl: 40px;
+  --space-4xl: 48px;
+  --space-5xl: 64px;
 
   /* ---- Typography ---- */
-  --font-family: 'Inter', system-ui, sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.9375rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --line-height-tight: 1.25;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ---- Radii ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
 
   /* ---- Shadows ---- */
-  --shadow-sm: 0 1px 2px rgba(45, 36, 30, 0.05);
-  --shadow-md: 0 4px 12px rgba(45, 36, 30, 0.08);
-  --shadow-lg: 0 12px 24px rgba(45, 36, 30, 0.12);
-  --shadow-xl: 0 20px 40px rgba(45, 36, 30, 0.15);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 15px 35px rgba(0, 0, 0, 0.07);
+  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.1);
+
+  /* ---- Transitions ---- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* ---- Z-Index ---- */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 500;
+  --z-toast: 600;
+  --z-chat: 400;
 
   /* ---- Layout ---- */
   --sidebar-width: 260px;
-  --header-height: 72px;
+  --header-height: 64px;
   --max-content-width: 1200px;
-  --z-sticky: 100;
 }
