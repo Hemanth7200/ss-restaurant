@@ -1,17 +1,20 @@
 /* ============================================
    SS Restaurant — Store (State Management)
    Syncs with Supabase when connected,
-   falls back to sessionStorage when not.
+   falls back to browser storage when not.
    ============================================ */
+
+const STORE_KEY = 'ss_restaurant_state';
 
 const Store = {
   _state: {},
   _listeners: [],
   _dbLoaded: false,
+  _storageListenerReady: false,
 
   async init() {
-    // 1. Load from sessionStorage first (instant)
-    const saved = sessionStorage.getItem('ss_restaurant_state');
+    // 1. Load shared browser state first (instant). Migrate older per-tab state if needed.
+    const saved = localStorage.getItem(STORE_KEY) || sessionStorage.getItem(STORE_KEY);
     if (saved) {
       try {
         this._state = JSON.parse(saved);
@@ -38,14 +41,18 @@ const Store = {
       } else {
         this.set('adminAuth', null);
       }
-      this._loadFromDB().then(() => {
-        if (Router && Router.currentRoute === '/menu') {
-          // Re-render menu to clear skeletons
-          const evt = new Event('hashchange');
-          window.dispatchEvent(evt);
-        }
-      });
+      
+      // CRITICAL: Await the DB load so we don't render stale/empty tables on landing
+      await this._loadFromDB();
+      
+      if (Router && Router.currentRoute === '/menu') {
+        // Re-render menu to clear skeletons
+        const evt = new Event('hashchange');
+        window.dispatchEvent(evt);
+      }
     }
+
+    this._listenForTabSync();
   },
 
   async _loadFromDB() {
@@ -76,7 +83,7 @@ const Store = {
       this._persist();
       console.log('✅ Data loaded from Supabase');
     } catch (e) {
-      console.error('Failed to load from DB, using sessionStorage:', e);
+      console.error('Failed to load from DB, using browser storage:', e);
     }
   },
 
@@ -129,10 +136,30 @@ const Store = {
 
   _persist() {
     try {
-      sessionStorage.setItem('ss_restaurant_state', JSON.stringify(this._state));
+      const serialized = JSON.stringify(this._state);
+      localStorage.setItem(STORE_KEY, serialized);
+      sessionStorage.setItem(STORE_KEY, serialized);
     } catch (e) {
       console.warn('Failed to persist state:', e);
     }
+  },
+
+  _listenForTabSync() {
+    if (this._storageListenerReady) return;
+    this._storageListenerReady = true;
+
+    window.addEventListener('storage', (event) => {
+      if (event.key !== STORE_KEY || !event.newValue) return;
+      try {
+        this._state = JSON.parse(event.newValue);
+        this._ensureDefaults();
+        this._notify('currentSession');
+        this._notify('orders');
+        this._notify('tables');
+      } catch (e) {
+        console.warn('Failed to sync state from another tab:', e);
+      }
+    });
   },
 
   _notify(key) {
@@ -151,10 +178,22 @@ const Store = {
 
   // ---- Session Helpers ----
   async startSession(tableId) {
+    const currentSession = this.getCurrentSession();
+    if (currentSession && currentSession.tableId === tableId) {
+      return currentSession;
+    }
+
+    if (currentSession && currentSession.tableId !== tableId) {
+      Toast.error('You already have an active order for Table ' + Utils.getTableNumber(currentSession.tableId) + '. Please complete it first.');
+      return null;
+    }
+
     // Check local state quickly first
     const localTable = this._state.tables.find(t => t.id === tableId);
     if (localTable && localTable.status === 'occupied') {
-      Toast.error('This table is already occupied!');
+      const resumed = await this.resumeSessionForTable(tableId);
+      if (resumed) return resumed;
+      Toast.error('This table is already occupied. Please ask staff for help.');
       return null;
     }
 
@@ -162,12 +201,14 @@ const Store = {
     if (DB_ENABLED) {
       const locked = await DB.updateTableStatus(tableId, 'occupied', 'available');
       if (!locked) {
+        const resumed = await this.resumeSessionForTable(tableId);
+        if (resumed) return resumed;
         Toast.error('This table was just taken by someone else!');
         return null;
       }
     }
 
-    const sessionId = 'sess-' + Date.now();
+    const sessionId = 'sess-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
     const session = {
       id: sessionId,
       tableId: tableId,
@@ -188,6 +229,41 @@ const Store = {
     );
     // Create session in DB
     await DB.createSession(session);
+    return session;
+  },
+
+  async resumeSessionForTable(tableId) {
+    if (!DB_ENABLED) return null;
+
+    const dbSession = await DB.getActiveSessionByTable(tableId);
+    if (!dbSession) return null;
+
+    const sessionOrders = this._state.orders
+      .filter(order => order.sessionId === dbSession.id)
+      .map(order => order.id);
+
+    const session = {
+      id: dbSession.id,
+      tableId: dbSession.tableId,
+      cart: [],
+      orders: sessionOrders,
+      customerInfo: dbSession.customerName || dbSession.customerPhone ? {
+        name: dbSession.customerName || '',
+        phone: dbSession.customerPhone || ''
+      } : null,
+      currentStep: 'menu',
+      startedAt: dbSession.startedAt,
+      status: dbSession.status || 'active',
+      paymentMethod: dbSession.paymentMethod || null,
+      paid: dbSession.status === 'paid',
+      paymentStatus: dbSession.status === 'paid' ? 'confirmed' : null
+    };
+
+    this.set('currentSession', session);
+    this.update('tables', tables =>
+      tables.map(t => t.id === tableId ? { ...t, status: 'occupied' } : t)
+    );
+
     return session;
   },
 
@@ -277,7 +353,7 @@ const Store = {
 
   async placeOrder(customerInfo, specialInstructions) {
     const session = this._state.currentSession;
-    if (!session || session.cart.length === 0) return null;
+    if (!session || session.cart.length === 0) return { success: false, error: 'Session not found or cart is empty' };
 
     const subtotal = Number(session.cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
     const gst = Number((subtotal * GST_RATE).toFixed(2));
@@ -339,10 +415,10 @@ const Store = {
         customerInfo: customerInfo 
       });
 
-      return finalOrder;
+      return { success: true, order: finalOrder };
     }
 
-    return null;
+    return { success: false, error: 'Database insertion failed after multiple attempts. Possible ID collision or connection issue.' };
   },
 
   // ---- Payment Helpers ----

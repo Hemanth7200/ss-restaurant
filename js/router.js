@@ -22,14 +22,15 @@ const Router = {
   async _handleRoute() {
     const hash = window.location.hash || '#/';
     const path = hash.replace('#', '') || '/';
+    const basePath = path.split('?')[0] || '/';
 
     // Find matching route
-    let handler = this.routes[path];
+    let handler = this.routes[basePath];
     if (!handler) {
       // Try to match partial paths
       const routeKeys = Object.keys(this.routes).sort((a, b) => b.length - a.length);
       for (const key of routeKeys) {
-        if (path.startsWith(key)) {
+        if (basePath.startsWith(key)) {
           handler = this.routes[key];
           break;
         }
@@ -50,7 +51,7 @@ const Router = {
     }
 
     // Route guards
-    if (path.startsWith('/admin') && path !== '/admin') {
+    if (basePath.startsWith('/admin') && basePath !== '/admin') {
       if (!Store.isAdminLoggedIn()) {
         this.navigate('/admin');
         return;
@@ -59,9 +60,9 @@ const Router = {
 
     // Customer flow guards
     const customerPages = ['/menu', '/cart', '/details', '/confirmation', '/payment', '/review'];
-    if (customerPages.includes(path)) {
+    if (customerPages.includes(basePath)) {
       const session = Store.getCurrentSession();
-      if (!session && path !== '/review') {
+      if (!session && basePath !== '/review') {
         // Check for URL table param
         const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
         const tableParam = urlParams.get('table');
@@ -69,7 +70,7 @@ const Router = {
           // Auto-select table from QR scan
           const tables = Store.get('tables');
           const table = tables.find(t => t.number === parseInt(tableParam));
-          if (table && table.status === 'available') {
+          if (table) {
             const newSession = await Store.startSession(table.id);
             if (!newSession) {
               this.navigate('/');
@@ -86,8 +87,8 @@ const Router = {
       }
     }
 
-    this.currentRoute = path;
-    handler(path);
+    this.currentRoute = basePath;
+    handler(basePath);
   },
 
   getQuery() {

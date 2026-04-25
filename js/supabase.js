@@ -168,6 +168,25 @@ const DB = {
     };
   },
 
+  async getActiveSessionByTable(tableId) {
+    if (!DB_ENABLED) return null;
+    const { data, error } = await supabaseClient
+      .from('sessions')
+      .select('*')
+      .eq('table_id', tableId)
+      .eq('status', 'active')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) { console.error('DB getActiveSessionByTable:', error); return null; }
+    if (!data) return null;
+    return {
+      id: data.id, tableId: data.table_id, customerName: data.customer_name,
+      customerPhone: data.customer_phone, status: data.status,
+      paymentMethod: data.payment_method, startedAt: data.started_at, endedAt: data.ended_at
+    };
+  },
+
   async createSession(session) {
     if (!DB_ENABLED) return;
     const { error } = await supabaseClient.from('sessions').insert({

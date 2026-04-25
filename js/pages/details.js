@@ -109,12 +109,12 @@ function renderDetails() {
 
     // Place order
     try {
-      const order = await Store.placeOrder({ name, phone }, instructions);
-      if (order) {
+      const result = await Store.placeOrder({ name, phone }, instructions);
+      if (result.success) {
         Toast.success('Order placed successfully!');
         Router.navigate('/confirmation');
       } else {
-        Toast.error('Failed to place order. Please try again.');
+        Toast.error(result.error || 'Failed to place order. Please try again.');
         confirmBtn.disabled = false;
         confirmBtn.textContent = originalText;
       }

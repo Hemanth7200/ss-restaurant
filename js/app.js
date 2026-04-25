@@ -5,7 +5,7 @@
 (async function () {
   'use strict';
 
-  // Initialize store (loads from sessionStorage + Supabase)
+  // Initialize store (loads from shared browser storage + Supabase)
   await Store.init();
 
   // Initialize toast
