@@ -5,6 +5,8 @@
    ============================================ */
 
 const STORE_KEY = 'ss_restaurant_state';
+const SHARED_STORE_KEY = `${STORE_KEY}_shared`;
+const SESSION_STORE_KEY = `${STORE_KEY}_session`;
 
 const Store = {
   _state: {},
@@ -13,18 +15,8 @@ const Store = {
   _storageListenerReady: false,
 
   async init() {
-    // 1. Load shared browser state first (instant). Migrate older per-tab state if needed.
-    const saved = localStorage.getItem(STORE_KEY) || sessionStorage.getItem(STORE_KEY);
-    if (saved) {
-      try {
-        this._state = JSON.parse(saved);
-        this._ensureDefaults();
-      } catch (e) {
-        this._resetToDefaults();
-      }
-    } else {
-      this._resetToDefaults();
-    }
+    // 1. Load shared browser state + tab-scoped session state.
+    this._hydrateFromStorage();
 
     // 2. Initialize Supabase
     initSupabase();
@@ -118,6 +110,47 @@ const Store = {
     this._persist();
   },
 
+  _hydrateFromStorage() {
+    const sharedRaw = localStorage.getItem(SHARED_STORE_KEY) || localStorage.getItem(STORE_KEY);
+    const sessionRaw = sessionStorage.getItem(SESSION_STORE_KEY) || sessionStorage.getItem(STORE_KEY);
+
+    if (sharedRaw) {
+      try {
+        this._state = JSON.parse(sharedRaw);
+      } catch (e) {
+        this._resetToDefaults();
+        return;
+      }
+    } else {
+      this._resetToDefaults();
+      return;
+    }
+
+    // Never trust shared storage for per-tab active session.
+    this._state.currentSession = null;
+
+    if (sessionRaw) {
+      try {
+        const sessionState = JSON.parse(sessionRaw);
+        if (sessionState && sessionState.currentSession) {
+          this._state.currentSession = sessionState.currentSession;
+        }
+      } catch (e) {
+        // Ignore corrupted session state for this tab.
+      }
+    }
+
+    this._ensureDefaults();
+    this._persist();
+  },
+
+  _getSharedStateSnapshot() {
+    const sharedState = { ...this._state };
+    // Per-tab only, never shared between tabs.
+    sharedState.currentSession = null;
+    return sharedState;
+  },
+
   get(key) {
     return this._state[key];
   },
@@ -136,9 +169,17 @@ const Store = {
 
   _persist() {
     try {
-      const serialized = JSON.stringify(this._state);
-      localStorage.setItem(STORE_KEY, serialized);
-      sessionStorage.setItem(STORE_KEY, serialized);
+      const sharedSerialized = JSON.stringify(this._getSharedStateSnapshot());
+      const sessionSerialized = JSON.stringify({
+        currentSession: this._state.currentSession || null
+      });
+
+      localStorage.setItem(SHARED_STORE_KEY, sharedSerialized);
+      sessionStorage.setItem(SESSION_STORE_KEY, sessionSerialized);
+
+      // Backward compatibility keys for previous builds.
+      localStorage.setItem(STORE_KEY, sharedSerialized);
+      sessionStorage.setItem(STORE_KEY, sessionSerialized);
     } catch (e) {
       console.warn('Failed to persist state:', e);
     }
@@ -149,11 +190,14 @@ const Store = {
     this._storageListenerReady = true;
 
     window.addEventListener('storage', (event) => {
-      if (event.key !== STORE_KEY || !event.newValue) return;
+      if ((event.key !== SHARED_STORE_KEY && event.key !== STORE_KEY) || !event.newValue) return;
       try {
-        this._state = JSON.parse(event.newValue);
+        const incomingShared = JSON.parse(event.newValue);
+        const activeSession = this._state.currentSession || null;
+
+        this._state = incomingShared;
+        this._state.currentSession = activeSession;
         this._ensureDefaults();
-        this._notify('currentSession');
         this._notify('orders');
         this._notify('tables');
       } catch (e) {
