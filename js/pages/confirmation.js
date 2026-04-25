@@ -148,18 +148,33 @@ function renderPayment() {
 
   document.getElementById('payment-back').addEventListener('click', () => Router.navigate('/confirmation'));
 
-  // Payment polling — checks for admin confirm/reject every 3 seconds
+  // Payment polling — checks for admin confirm/reject every 3 seconds from the DB
   let paymentPollInterval = null;
 
   function startPaymentPolling() {
     if (paymentPollInterval) clearInterval(paymentPollInterval);
-    paymentPollInterval = setInterval(() => {
+    paymentPollInterval = setInterval(async () => {
       const s = Store.getCurrentSession();
       if (!s) return;
-      if (s.paymentStatus === 'confirmed') {
+      
+      if (DB_ENABLED) {
+        const dbSession = await DB.getSession(s.id);
+        if (dbSession && dbSession.status === 'paid') {
+          Store.updateSession({ paymentStatus: 'confirmed', paid: true });
+        } else if (dbSession && dbSession.status === 'failed') {
+           // Wait, DB schema only supports 'active', 'paid', 'closed' for session status.
+           // For failed payments, the admin might just revert payment_method to null in DB.
+           if (!dbSession.paymentMethod) {
+             Store.updateSession({ paymentStatus: 'failed', paid: false });
+           }
+        }
+      }
+
+      const updatedS = Store.getCurrentSession();
+      if (updatedS.paymentStatus === 'confirmed') {
         clearInterval(paymentPollInterval);
         showPaymentResult('success');
-      } else if (s.paymentStatus === 'failed') {
+      } else if (updatedS.paymentStatus === 'failed') {
         clearInterval(paymentPollInterval);
         showPaymentResult('failed');
       }
@@ -210,7 +225,7 @@ function renderPayment() {
             ${Utils.formatPrice(totals.total)}
           </p>
           <p style="color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-lg);">
-            Payment was not confirmed. Please try again or contact the counter.
+            Payment was not confirmed by the admin. Please try again or contact the counter.
           </p>
           <button class="btn btn-primary btn-full" id="retry-payment-btn">
             Try Again
@@ -235,6 +250,10 @@ function renderPayment() {
 
       // Save payment method to session
       Store.updateSession({ paymentMethod: method, paymentStatus: 'pending' });
+      // Sync payment method to DB so admin can see it's pending
+      if (DB_ENABLED) {
+        DB.updateSession(session.id, { paymentMethod: method });
+      }
 
       if (method === 'cash') {
         area.innerHTML = `
@@ -251,21 +270,18 @@ function renderPayment() {
               <strong style="color: var(--text-primary); font-size: var(--font-size-lg);">${Utils.formatPrice(totals.total)}</strong>
             </p>
             <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-              Table ${tableNum} • Order #${session.orders[session.orders.length - 1] || '---'}
+              Table ${tableNum} • Admin will verify payment
             </p>
             <div class="payment-waiting-status">
               <div class="payment-spinner"></div>
-              <span>Waiting for payment confirmation from cashier...</span>
+              <span>Waiting for admin to confirm payment...</span>
             </div>
-            <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-top: var(--space-md);">
-              This page will update automatically once the cashier confirms your payment.
-            </p>
           </div>
         `;
         startPaymentPolling();
 
       } else {
-        // UPI — no QR code, no admin needed, just Pay button + auto-detect return
+        // UPI
         const upiId = 'hemanthrajudayakumar@oksbi';
         const payeeName = 'SS Restaurant';
         const amount = totals.total.toFixed(2);
@@ -288,7 +304,7 @@ function renderPayment() {
                 ${Utils.formatPrice(totals.total)}
               </p>
               <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-                Table ${tableNum} • Order #${session.orders[session.orders.length - 1] || '---'}
+                Table ${tableNum} • Admin will verify payment
               </p>
 
               <a href="${upiLink}" class="btn btn-primary btn-full" id="upi-pay-btn" style="margin-bottom: var(--space-md); text-decoration: none; font-size: var(--font-size-base); padding: var(--space-md) var(--space-xl);">
@@ -300,78 +316,14 @@ function renderPayment() {
                 UPI ID: <strong>${upiId}</strong>
               </p>
 
-              <p style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-lg); line-height: 1.5;">
-                Tap the button above to open your UPI app and complete the payment.
-              </p>
-
               <div class="payment-waiting-status" id="upi-status">
                 <div class="payment-spinner"></div>
-                <span>Waiting for you to complete payment...</span>
+                <span>Waiting for admin to confirm payment...</span>
               </div>
             </div>
           </div>
         `;
-
-        // Track UPI app open & detect return
-        let upiAppOpened = false;
-        const upiPayBtn = document.getElementById('upi-pay-btn');
-
-        upiPayBtn.addEventListener('click', () => {
-          upiAppOpened = true;
-        });
-
-        // Detect return from UPI app using Page Visibility API
-        function onVisibilityChange() {
-          if (document.visibilityState === 'visible' && upiAppOpened) {
-            document.removeEventListener('visibilitychange', onVisibilityChange);
-            setTimeout(() => {
-              showUpiConfirmButtons();
-            }, 1000);
-          }
-        }
-        document.addEventListener('visibilitychange', onVisibilityChange);
-
-        function showUpiConfirmButtons() {
-          const contentArea = document.getElementById('upi-content-area');
-          if (!contentArea) return;
-
-          contentArea.innerHTML = `
-            <div class="payment-waiting-icon">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="5" y="2" width="14" height="20" rx="2"/>
-                <line x1="12" y1="18" x2="12" y2="18.01"/>
-                <path d="M9 8l3-2 3 2"/>
-                <path d="M9 12l3 2 3-2"/>
-              </svg>
-            </div>
-            <h3 style="margin-bottom: var(--space-sm);">Was your payment successful?</h3>
-            <p style="font-weight: 700; font-size: 1.5rem; margin-bottom: var(--space-xs);">
-              ${Utils.formatPrice(totals.total)}
-            </p>
-            <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-xl);">
-              Please confirm the status from your UPI app
-            </p>
-            <div style="display: flex; gap: var(--space-md); width: 100%;">
-              <button class="btn btn-danger" id="upi-failed-btn" style="flex: 1; padding: var(--space-md);">
-                ✕ Payment Failed
-              </button>
-              <button class="btn btn-success" id="upi-success-btn" style="flex: 2; padding: var(--space-md);">
-                ✓ Payment Done
-              </button>
-            </div>
-          `;
-
-          document.getElementById('upi-success-btn').addEventListener('click', () => {
-            Store.updateSession({ paymentMethod: 'upi', paymentStatus: 'confirmed', paid: true, currentStep: 'review' });
-            Store.confirmPayment(session.id);
-            showPaymentResult('success');
-          });
-
-          document.getElementById('upi-failed-btn').addEventListener('click', () => {
-            Store.updateSession({ paymentMethod: 'upi', paymentStatus: 'failed', paid: false });
-            showPaymentResult('failed');
-          });
-        }
+        startPaymentPolling();
       }
     });
   });

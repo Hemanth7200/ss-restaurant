@@ -130,6 +130,28 @@ const DB = {
   },
 
   // ---- Sessions ----
+  async getSessions() {
+    if (!DB_ENABLED) return null;
+    const { data, error } = await supabaseClient.from('sessions').select('*');
+    if (error) { console.error('DB getSessions:', error); return null; }
+    return data.map(s => ({
+      id: s.id, tableId: s.table_id, customerName: s.customer_name,
+      customerPhone: s.customer_phone, status: s.status,
+      paymentMethod: s.payment_method, startedAt: s.started_at, endedAt: s.ended_at
+    }));
+  },
+
+  async getSession(id) {
+    if (!DB_ENABLED) return null;
+    const { data, error } = await supabaseClient.from('sessions').select('*').eq('id', id).single();
+    if (error) { console.error('DB getSession:', error); return null; }
+    return {
+      id: data.id, tableId: data.table_id, customerName: data.customer_name,
+      customerPhone: data.customer_phone, status: data.status,
+      paymentMethod: data.payment_method, startedAt: data.started_at, endedAt: data.ended_at
+    };
+  },
+
   async createSession(session) {
     if (!DB_ENABLED) return;
     const { error } = await supabaseClient.from('sessions').insert({
