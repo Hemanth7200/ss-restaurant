@@ -148,17 +148,17 @@ function renderAdminDashboard() {
       </div>
 
       <div class="chart-container" style="margin-bottom: var(--space-2xl);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
-          <h3>Revenue Overview</h3>
-          <div style="display: flex; align-items: center; gap: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-md);">
+          <h3 style="margin: 0;">Revenue Overview</h3>
+          <div style="display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; justify-content: flex-end;">
             ${chartRange === 'custom' ? `
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="date" id="custom-start-date" class="form-input" value="${customStartDate}" style="padding: 4px 8px; font-size: 13px; width: auto;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <input type="date" id="custom-start-date" class="form-input" value="${customStartDate}" style="padding: 4px 8px; font-size: 13px; width: auto; min-width: 120px;">
                 <span style="color: var(--text-muted); font-size: 12px;">to</span>
-                <input type="date" id="custom-end-date" class="form-input" value="${customEndDate}" style="padding: 4px 8px; font-size: 13px; width: auto;">
+                <input type="date" id="custom-end-date" class="form-input" value="${customEndDate}" style="padding: 4px 8px; font-size: 13px; width: auto; min-width: 120px;">
               </div>
             ` : ''}
-            <select id="chart-range-select" class="form-input" style="width: auto; padding: 4px 12px; font-size: 14px;">
+            <select id="chart-range-select" class="form-input" style="width: auto; padding: 4px 12px; font-size: 14px; min-width: 140px;">
               <option value="7days" ${chartRange === '7days' ? 'selected' : ''}>Last 7 Days</option>
               <option value="1month" ${chartRange === '1month' ? 'selected' : ''}>Last 1 Month</option>
               <option value="1year" ${chartRange === '1year' ? 'selected' : ''}>Last 1 Year</option>

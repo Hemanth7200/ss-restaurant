@@ -3,7 +3,8 @@
    ============================================ */
 
 function renderAdminPayments() {
-  let filterDate = ''; // YYYY-MM-DD
+  let filterStart = ''; // YYYY-MM-DD
+  let filterEnd = '';   // YYYY-MM-DD
 
   renderAdminLayout('Pending Payments', (container) => {
 
@@ -17,16 +18,10 @@ function renderAdminPayments() {
       }
 
       let html = `
-        <div style="margin-bottom: var(--space-xl); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--space-md);">
-          <div>
-            <p style="color: var(--text-muted); font-size: var(--font-size-sm);">
-              Confirm or reject payments from customers. Both Cash and UPI payments require your confirmation.
-            </p>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Filter by Date</label>
-            <input type="date" id="payments-date-filter" class="form-input" value="${filterDate}" style="width: auto; padding: 6px 12px;">
-          </div>
+        <div style="margin-bottom: var(--space-xl);">
+          <p style="color: var(--text-muted); font-size: var(--font-size-sm);">
+            Confirm or reject payments from customers. Both Cash and UPI payments require your confirmation.
+          </p>
         </div>
       `;
 
@@ -36,9 +31,16 @@ function renderAdminPayments() {
       const allOrders = Store.get('orders') || [];
       let filteredHistory = allOrders.slice();
       
-      if (filterDate) {
-        pendingSessions = pendingSessions.filter(s => s.startedAt && s.startedAt.startsWith(filterDate));
-        filteredHistory = filteredHistory.filter(o => o.createdAt && o.createdAt.startsWith(filterDate));
+      if (filterStart || filterEnd) {
+        if (filterStart) {
+          pendingSessions = pendingSessions.filter(s => s.startedAt && s.startedAt >= filterStart);
+          filteredHistory = filteredHistory.filter(o => o.createdAt && o.createdAt >= filterStart);
+        }
+        if (filterEnd) {
+          const endLimit = filterEnd + 'T23:59:59';
+          pendingSessions = pendingSessions.filter(s => s.startedAt && s.startedAt <= endLimit);
+          filteredHistory = filteredHistory.filter(o => o.createdAt && o.createdAt <= endLimit);
+        }
       }
       
       filteredHistory = filteredHistory.reverse(); // Newest first after filtering
@@ -123,8 +125,16 @@ function renderAdminPayments() {
       // Append Payment History Section
       html += `
         <div class="data-table-wrapper" style="margin-top: var(--space-3xl);">
-          <div class="data-table-header">
-            <h3 style="font-size: var(--font-size-base);">Payment History</h3>
+          <div class="data-table-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-md);">
+            <h3 style="font-size: var(--font-size-base); margin: 0;">Payment History</h3>
+            
+            <div style="display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="date" id="history-start-date" class="form-input" value="${filterStart}" style="padding: 4px 8px; font-size: 13px; width: auto;">
+                <span style="color: var(--text-muted); font-size: 12px;">to</span>
+                <input type="date" id="history-end-date" class="form-input" value="${filterEnd}" style="padding: 4px 8px; font-size: 13px; width: auto;">
+              </div>
+            </div>
           </div>
           ${allOrders.length === 0 ? `
             <div class="empty-state" style="padding: var(--space-3xl);">
@@ -187,10 +197,18 @@ function renderAdminPayments() {
       });
 
       // Bind filter
-      const filterInput = container.querySelector('#payments-date-filter');
-      if (filterInput) {
-        filterInput.addEventListener('change', (e) => {
-          filterDate = e.target.value;
+      const startInput = container.querySelector('#history-start-date');
+      const endInput = container.querySelector('#history-end-date');
+      
+      if (startInput) {
+        startInput.addEventListener('change', (e) => {
+          filterStart = e.target.value;
+          render();
+        });
+      }
+      if (endInput) {
+        endInput.addEventListener('change', (e) => {
+          filterEnd = e.target.value;
           render();
         });
       }
