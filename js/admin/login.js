@@ -69,7 +69,7 @@ function renderAdminLayout(pageTitle, contentFn) {
   const navItems = [
     { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
     { path: '/admin/orders', icon: '📋', label: 'Live Orders' },
-    { path: '/admin/payments', icon: '💳', label: 'Payment History' },
+    { path: '/admin/payments', icon: '💵', label: 'Cash Approvals' },
     { path: '/admin/menu', icon: '🍽️', label: 'Menu Items' },
     { path: '/admin/categories', icon: '📁', label: 'Categories' },
     { path: '/admin/tables', icon: '🪑', label: 'Tables & QR' },

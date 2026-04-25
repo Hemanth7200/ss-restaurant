@@ -3,7 +3,7 @@
    ============================================ */
 
 function renderAdminPayments() {
-  renderAdminLayout('Payments', (container) => {
+  renderAdminLayout('Cash Approvals', (container) => {
 
     function render() {
       const session = Store.getCurrentSession();

@@ -22,11 +22,12 @@ function renderAdminOrders() {
           `).join('')}
         </div>
 
-        <div style="margin-bottom: var(--space-lg);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-lg); align-items: center;">
           <div class="search-bar" style="max-width: 300px;">
             <span class="search-icon">🔍</span>
             <input type="text" class="form-input" id="order-search" placeholder="Search by order ID or table..." />
           </div>
+          <button class="btn btn-secondary" id="refresh-orders-btn">🔄 Refresh Orders</button>
         </div>
 
         ${orders.length === 0 ? `
@@ -55,12 +56,8 @@ function renderAdminOrders() {
               }
 
               let paymentAction = '';
-              if (isSessionOrder && paymentMethod && !isPaid && paymentStatus !== 'confirmed') {
-                if (paymentMethod === 'cash') {
-                  paymentAction = `<button class="btn btn-sm btn-success" onclick="adminConfirmPayment('${session.id}')">💵 Mark Cash Payment Received</button>`;
-                } else {
-                  paymentAction = `<button class="btn btn-sm btn-success" onclick="adminConfirmPayment('${session.id}')">✓ Confirm UPI Payment</button>`;
-                }
+              if (isSessionOrder && paymentMethod === 'cash' && !isPaid && paymentStatus !== 'confirmed') {
+                 paymentAction = `<button class="btn btn-sm btn-success" onclick="adminConfirmPayment('${session.id}')">💵 Mark Cash Received</button>`;
               }
 
               return `
@@ -120,6 +117,17 @@ function renderAdminOrders() {
         });
       });
 
+      const refreshBtn = document.getElementById('refresh-orders-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+          refreshBtn.innerHTML = '🔄 ...';
+          if (DB_ENABLED) {
+            await Promise.all([DB.getOrders(), DB.getSessions()]);
+          }
+          render();
+        });
+      }
+
       // Search
       const searchInput = document.getElementById('order-search');
       if (searchInput) {
@@ -141,6 +149,22 @@ function renderAdminOrders() {
     }
 
     render();
+
+    // Auto-refresh every 5 seconds to pick up new orders from DB
+    const refreshInterval = setInterval(async () => {
+      if (document.getElementById('admin-page-content')) {
+        const searchInput = document.getElementById('order-search');
+        // Only refresh if not actively searching/typing
+        if (searchInput && document.activeElement !== searchInput && filterStatus === 'all') {
+           if (DB_ENABLED) {
+             await Promise.all([DB.getOrders(), DB.getSessions()]);
+           }
+           render();
+        }
+      } else {
+        clearInterval(refreshInterval);
+      }
+    }, 5000);
   });
 }
 
