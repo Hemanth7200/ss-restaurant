@@ -11,7 +11,15 @@ function renderLanding() {
   const query = Router.getQuery();
   if (query.table) {
     const table = tables.find(t => t.number === parseInt(query.table));
-    if (table && table.status === 'available') {
+    if (table) {
+      const currentSession = Store.getCurrentSession();
+      // If we already have an active session for THIS exact table, just resume it
+      if (currentSession && currentSession.tableId === table.id) {
+        Router.navigate('/' + (currentSession.currentStep || 'menu'));
+        return;
+      }
+      
+      // Otherwise, start a new session for this table, forcing the redirect
       Store.startSession(table.id).then(session => {
         if (session) Router.navigate('/menu');
       });
@@ -19,7 +27,7 @@ function renderLanding() {
     }
   }
 
-  // Check if there's already an active session
+  // Check if there's already an active session (manual fallback)
   const session = Store.getCurrentSession();
   if (session) {
     Router.navigate('/' + (session.currentStep || 'menu'));
