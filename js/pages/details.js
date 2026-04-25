@@ -16,47 +16,81 @@ function renderDetails() {
   const prevPhone = session.customerInfo ? session.customerInfo.phone : '';
 
   app.innerHTML = `
-    <header class="customer-header">
-      <div class="customer-header-left">
-        <button class="cart-back-btn" id="details-back">←</button>
-        <div>
-          <div class="customer-header-title">Your Details</div>
-          <div class="customer-header-table">Table ${tableNum}</div>
-        </div>
-      </div>
-    </header>
-
-    <div class="details-page">
-      <h2>Almost there!</h2>
-      <p style="color: var(--text-muted); margin-bottom: var(--space-xl);">Please provide your details to place the order.</p>
-
-      <div class="details-form">
-        <div class="form-group">
-          <label class="form-label">Mobile Number *</label>
-          <div class="form-input-group">
-            <span class="input-prefix">+91</span>
-            <input type="tel" id="input-phone" class="form-input" placeholder="Enter 10-digit number" maxlength="10" value="${prevPhone}" />
+    <div class="menu-page">
+      <!-- Desktop Sidebar -->
+      <aside class="menu-sidebar">
+        <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
+          <div>
+            <div class="customer-header-title">SS Restaurant</div>
+            <div class="customer-header-table">Table ${tableNum}</div>
           </div>
-          <span class="form-error" id="phone-error" style="display: none;"></span>
         </div>
+        
+        <nav class="sidebar-nav">
+          <a href="#/menu" class="nav-item">
+            <span>🏠</span> Menu
+          </a>
+          <a href="#/cart" class="nav-item">
+            <span>🛒</span> Your Cart
+          </a>
+          <a href="#/info" class="nav-item">
+            <span>ℹ️</span> Table Info
+          </a>
+          <a href="#/call" class="nav-item">
+            <span>📞</span> Call Waiter
+          </a>
+        </nav>
 
-        <div class="form-group">
-          <label class="form-label">Full Name *</label>
-          <input type="text" id="input-name" class="form-input" placeholder="Enter your name" value="${Utils.escapeHtml(prevName)}" />
-          <span class="form-error" id="name-error" style="display: none;"></span>
+        <div class="slogan-card">
+          <div class="slogan-text">Good food<br>Good mood ♡</div>
+          <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
         </div>
+      </aside>
 
-        <div class="form-group">
-          <label class="form-label">Special Instructions (Optional)</label>
-          <textarea id="input-instructions" class="form-input" placeholder="Any allergies, preferences, or special requests..." rows="3"></textarea>
+      <!-- Main Content -->
+      <main class="menu-main">
+        <header class="customer-header">
+          <div class="customer-header-left">
+            <button class="cart-back-btn" id="details-back">←</button>
+            <div>
+              <div class="customer-header-title">Your Details</div>
+              <div class="customer-header-table">Table ${tableNum}</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="details-page">
+          <h2>Almost there!</h2>
+          <p style="color: var(--text-muted); margin-bottom: var(--space-xl);">Please provide your details to place the order.</p>
+
+          <div class="details-form">
+            <div class="form-group">
+              <label class="form-label">Mobile Number *</label>
+              <div class="form-input-group">
+                <span class="input-prefix">+91</span>
+                <input type="tel" id="input-phone" class="form-input" placeholder="Enter 10-digit number" maxlength="10" value="${prevPhone}" />
+              </div>
+              <span class="form-error" id="phone-error" style="display: none;"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="input-name" class="form-input" placeholder="Enter your name" value="${Utils.escapeHtml(prevName)}" />
+              <span class="form-error" id="name-error" style="display: none;"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Special Instructions (Optional)</label>
+              <textarea id="input-instructions" class="form-input" placeholder="Any allergies, preferences, or special requests..." rows="3"></textarea>
+            </div>
+            
+            <button class="btn btn-primary btn-full" style="margin-top: var(--space-xl);" id="confirm-order">
+              Confirm & Place Order
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <div class="sticky-bottom">
-      <button class="btn btn-primary" id="confirm-order">
-        Confirm & Place Order
-      </button>
+      </main>
     </div>
   `;
 

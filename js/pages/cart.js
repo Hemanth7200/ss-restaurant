@@ -17,17 +17,51 @@ function renderCart() {
   const prevOrders = session.orders.map(orderId => Store.get('orders').find(o => o.id === orderId)).filter(Boolean);
 
   app.innerHTML = `
-    <header class="customer-header">
-      <div class="customer-header-left">
-        <button class="cart-back-btn" id="cart-back">←</button>
-        <div>
-          <div class="customer-header-title">Your Cart</div>
-          <div class="customer-header-table">Table ${tableNum}</div>
+    <div class="menu-page">
+      <!-- Desktop Sidebar -->
+      <aside class="menu-sidebar">
+        <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
+          <div>
+            <div class="customer-header-title">SS Restaurant</div>
+            <div class="customer-header-table">Table ${tableNum}</div>
+          </div>
         </div>
-      </div>
-    </header>
+        
+        <nav class="sidebar-nav">
+          <a href="#/menu" class="nav-item">
+            <span>🏠</span> Menu
+          </a>
+          <a href="#/cart" class="nav-item active">
+            <span>🛒</span> Your Cart
+          </a>
+          <a href="#/info" class="nav-item">
+            <span>ℹ️</span> Table Info
+          </a>
+          <a href="#/call" class="nav-item">
+            <span>📞</span> Call Waiter
+          </a>
+        </nav>
 
-    <div class="cart-page">
+        <div class="slogan-card">
+          <div class="slogan-text">Good food<br>Good mood ♡</div>
+          <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="menu-main">
+        <header class="customer-header">
+          <div class="customer-header-left">
+            <button class="cart-back-btn" id="cart-back">←</button>
+            <div>
+              <div class="customer-header-title">Your Cart</div>
+              <div class="customer-header-table">Table ${tableNum}</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="cart-page">
       ${cart.length === 0 && prevOrders.length === 0 ? `
         <div class="empty-state">
           <div class="empty-state-icon">🛒</div>
@@ -90,9 +124,28 @@ function renderCart() {
           </div>
         ` : ''}
 
-        ${cart.length > 0 || prevOrders.length > 0 ? `
+        ${cart.length > 0 ? `
           <div class="bill-summary">
-            <h4>${prevOrders.length > 0 ? 'Running Bill Summary' : 'Bill Summary'}</h4>
+            <h4>Bill Summary</h4>
+            <div class="bill-row">
+              <span>Subtotal</span>
+              <span>${Utils.formatPrice(totals.subtotal)}</span>
+            </div>
+            <div class="bill-row">
+              <span>GST (5%)</span>
+              <span>${Utils.formatPrice(totals.gst)}</span>
+            </div>
+            <div class="bill-row total">
+              <span>Grand Total</span>
+              <span>${Utils.formatPrice(totals.total)}</span>
+            </div>
+            <button class="btn btn-primary btn-full" style="margin-top: var(--space-xl);" id="proceed-order">
+              Proceed to Place Order • ${Utils.formatPrice(totals.total)}
+            </button>
+          </div>
+        ` : prevOrders.length > 0 ? `
+          <div class="bill-summary">
+            <h4>Running Bill Summary</h4>
             <div class="bill-row">
               <span>Subtotal</span>
               <span>${Utils.formatPrice(Store.getSessionTotal().subtotal)}</span>
@@ -105,25 +158,15 @@ function renderCart() {
               <span>Grand Total</span>
               <span>${Utils.formatPrice(Store.getSessionTotal().total)}</span>
             </div>
+            <button class="btn btn-primary btn-full" style="margin-top: var(--space-xl);" id="view-bill-pay">
+              View Bill & Pay
+            </button>
           </div>
         ` : ''}
       `}
+      </div>
+      </main>
     </div>
-
-    ${cart.length > 0 ? `
-      <div class="sticky-bottom">
-        <button class="btn btn-primary" id="proceed-order">
-          Proceed to Place Order • ${Utils.formatPrice(totals.total)}
-        </button>
-      </div>
-    ` : prevOrders.length > 0 ? `
-      <div class="sticky-bottom">
-        <button class="btn btn-primary" id="view-bill-pay" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
-          View Bill & Pay
-        </button>
-      </div>
-    ` : ''}
   `;
 
   // Events

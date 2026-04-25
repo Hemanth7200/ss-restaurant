@@ -14,43 +14,80 @@ function renderConfirmation() {
   const lastOrder = Store.get('orders').find(o => o.id === lastOrderId);
 
   app.innerHTML = `
-    <div class="confirmation-page">
-      <div class="confirmation-check">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      </div>
-
-      <h2>Order Placed!</h2>
-      <p style="color: var(--text-secondary);">Your delicious food is being prepared</p>
-
-      <div class="order-id">#${lastOrderId || '---'}</div>
-
-      <p class="table-info">📍 Table ${tableNum}</p>
-
-      ${lastOrder ? `
-        <div style="background: var(--bg-input); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-xl); width: 100%; max-width: 300px; text-align: left;">
-          ${lastOrder.items.map(item => `
-            <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: var(--font-size-sm);">
-              <span>${item.name} × ${item.quantity}</span>
-              <span style="font-weight: 600;">${Utils.formatPrice(item.price * item.quantity)}</span>
-            </div>
-          `).join('')}
-          <div style="border-top: 1px solid var(--border-color); margin-top: var(--space-sm); padding-top: var(--space-sm); display: flex; justify-content: space-between; font-weight: 700;">
-            <span>Total</span>
-            <span>${Utils.formatPrice(lastOrder.total)}</span>
+    <div class="menu-page">
+      <!-- Desktop Sidebar -->
+      <aside class="menu-sidebar">
+        <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
+          <div>
+            <div class="customer-header-title">SS Restaurant</div>
+            <div class="customer-header-table">Table ${tableNum}</div>
           </div>
         </div>
-      ` : ''}
+        
+        <nav class="sidebar-nav">
+          <a href="#/menu" class="nav-item">
+            <span>🏠</span> Menu
+          </a>
+          <a href="#/cart" class="nav-item">
+            <span>🛒</span> Your Cart
+          </a>
+          <a href="#/info" class="nav-item">
+            <span>ℹ️</span> Table Info
+          </a>
+          <a href="#/call" class="nav-item">
+            <span>📞</span> Call Waiter
+          </a>
+        </nav>
 
-      <div class="confirmation-actions">
-        <button class="btn btn-primary btn-full" id="back-to-menu">
-          ➕ Order More Items
-        </button>
-        <button class="btn btn-secondary btn-full" id="go-to-payment">
-          💰 View Bill & Pay
-        </button>
-      </div>
+        <div class="slogan-card">
+          <div class="slogan-text">Good food<br>Good mood ♡</div>
+          <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="menu-main">
+        <div class="confirmation-page">
+          <div class="confirmation-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+
+          <h2>Order Placed!</h2>
+          <p style="color: var(--text-secondary);">Your delicious food is being prepared</p>
+
+          <div class="order-id">#${lastOrderId || '---'}</div>
+
+          <p class="table-info">📍 Table ${tableNum}</p>
+
+          ${lastOrder ? `
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-xl); width: 100%; max-width: 400px; text-align: left;">
+              <h4 style="margin-bottom: var(--space-md); font-size: var(--font-size-sm); color: var(--text-muted);">Current Order Details</h4>
+              ${lastOrder.items.map(item => `
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: var(--font-size-sm);">
+                  <span>${item.name} × ${item.quantity}</span>
+                  <span style="font-weight: 600;">${Utils.formatPrice(item.price * item.quantity)}</span>
+                </div>
+              `).join('')}
+              <div style="border-top: 1px dashed var(--border-color); margin-top: var(--space-sm); padding-top: var(--space-sm); display: flex; justify-content: space-between; font-weight: 700; font-size: var(--font-size-base);">
+                <span>Total</span>
+                <span>${Utils.formatPrice(lastOrder.total)}</span>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="confirmation-actions" style="max-width: 400px; width: 100%;">
+            <button class="btn btn-primary btn-full" id="back-to-menu">
+              ➕ Order More Items
+            </button>
+            <button class="btn btn-secondary btn-full" id="go-to-payment" style="margin-top: var(--space-md);">
+              💰 View Bill & Pay
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   `;
 
@@ -84,65 +121,101 @@ function renderPayment() {
   const upiSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/><path d="M9 8l3-2 3 2"/><path d="M9 12l3 2 3-2"/></svg>`;
 
   app.innerHTML = `
-    <header class="customer-header">
-      <div class="customer-header-left">
-        <button class="cart-back-btn" id="payment-back">←</button>
-        <div>
-          <div class="customer-header-title">Payment</div>
-          <div class="customer-header-table">Table ${tableNum}</div>
+    <div class="menu-page">
+      <!-- Desktop Sidebar -->
+      <aside class="menu-sidebar">
+        <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
+          <div>
+            <div class="customer-header-title">SS Restaurant</div>
+            <div class="customer-header-table">Table ${tableNum}</div>
+          </div>
         </div>
-      </div>
-    </header>
+        
+        <nav class="sidebar-nav">
+          <a href="#/menu" class="nav-item">
+            <span>🏠</span> Menu
+          </a>
+          <a href="#/cart" class="nav-item">
+            <span>🛒</span> Your Cart
+          </a>
+          <a href="#/info" class="nav-item">
+            <span>ℹ️</span> Table Info
+          </a>
+          <a href="#/call" class="nav-item">
+            <span>📞</span> Call Waiter
+          </a>
+        </nav>
 
-    <div class="payment-page">
-      <h2>Your Bill</h2>
+        <div class="slogan-card">
+          <div class="slogan-text">Good food<br>Good mood ♡</div>
+          <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
+        </div>
+      </aside>
 
-      <div class="bill-summary" style="margin-top: 0;">
-        <h4>Order Summary</h4>
-        ${session.orders.map(orderId => {
-          const order = Store.get('orders').find(o => o.id === orderId);
-          if (!order) return '';
-          return order.items.map(item => `
-            <div class="bill-row">
-              <span>${item.name} × ${item.quantity}</span>
-              <span>${Utils.formatPrice(item.price * item.quantity)}</span>
+      <!-- Main Content -->
+      <main class="menu-main">
+        <header class="customer-header">
+          <div class="customer-header-left">
+            <button class="cart-back-btn" id="payment-back">←</button>
+            <div>
+              <div class="customer-header-title">Payment</div>
+              <div class="customer-header-table">Table ${tableNum}</div>
             </div>
-          `).join('');
-        }).join('')}
-        <div class="bill-row" style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px dashed var(--border-color);">
-          <span>Subtotal</span>
-          <span>${Utils.formatPrice(totals.subtotal)}</span>
-        </div>
-        <div class="bill-row">
-          <span>GST (5%)</span>
-          <span>${Utils.formatPrice(totals.gst)}</span>
-        </div>
-        <div class="bill-row total">
-          <span>Total Amount</span>
-          <span>${Utils.formatPrice(totals.total)}</span>
-        </div>
-      </div>
-
-      <h3 style="margin-top: var(--space-2xl); margin-bottom: var(--space-md); font-size: var(--font-size-base);">Select Payment Method</h3>
-
-      <div class="payment-options">
-        <div class="payment-option" id="pay-cash" data-method="cash">
-          <div class="payment-option-icon">${cashSvg}</div>
-          <div class="payment-option-text">
-            <h4>Cash</h4>
-            <p>Pay at the reception counter</p>
           </div>
-        </div>
-        <div class="payment-option" id="pay-upi" data-method="upi">
-          <div class="payment-option-icon">${upiSvg}</div>
-          <div class="payment-option-text">
-            <h4>UPI</h4>
-            <p>Pay via UPI (GPay, PhonePe, Paytm)</p>
-          </div>
-        </div>
-      </div>
+        </header>
 
-      <div id="payment-action-area"></div>
+        <div class="payment-page">
+          <h2>Your Bill</h2>
+
+          <div class="bill-summary" style="margin-top: 0; max-width: 500px;">
+            <h4>Order Summary</h4>
+            ${session.orders.map(orderId => {
+              const order = Store.get('orders').find(o => o.id === orderId);
+              if (!order) return '';
+              return order.items.map(item => `
+                <div class="bill-row">
+                  <span>${item.name} × ${item.quantity}</span>
+                  <span>${Utils.formatPrice(item.price * item.quantity)}</span>
+                </div>
+              `).join('');
+            }).join('')}
+            <div class="bill-row" style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px dashed var(--border-color);">
+              <span>Subtotal</span>
+              <span>${Utils.formatPrice(totals.subtotal)}</span>
+            </div>
+            <div class="bill-row">
+              <span>GST (5%)</span>
+              <span>${Utils.formatPrice(totals.gst)}</span>
+            </div>
+            <div class="bill-row total">
+              <span>Total Amount</span>
+              <span>${Utils.formatPrice(totals.total)}</span>
+            </div>
+          </div>
+
+          <h3 style="margin-top: var(--space-2xl); margin-bottom: var(--space-md); font-size: var(--font-size-base);">Select Payment Method</h3>
+
+          <div class="payment-options" style="max-width: 500px;">
+            <div class="payment-option" id="pay-cash" data-method="cash">
+              <div class="payment-option-icon">${cashSvg}</div>
+              <div class="payment-option-text">
+                <h4>Cash</h4>
+                <p>Pay at the reception counter</p>
+              </div>
+            </div>
+            <div class="payment-option" id="pay-upi" data-method="upi">
+              <div class="payment-option-icon">${upiSvg}</div>
+              <div class="payment-option-text">
+                <h4>UPI</h4>
+                <p>Pay via UPI (GPay, PhonePe, Paytm)</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="payment-action-area" style="max-width: 500px; width: 100%;"></div>
+        </div>
+      </main>
     </div>
   `;
 
@@ -348,52 +421,89 @@ function renderPayment() {
 function renderReview() {
   const app = document.getElementById('app');
   const session = Store.getCurrentSession();
+  const tableNum = session ? Utils.getTableNumber(session.tableId) : '---';
 
   app.innerHTML = `
-    <div class="review-page">
-      <div style="text-align: center; margin-bottom: var(--space-2xl);">
-        <div style="font-size: 48px; margin-bottom: var(--space-md);">🎉</div>
-        <h2>Thank You!</h2>
-        <p class="review-subtitle">We'd love to hear about your experience</p>
-      </div>
-
-      <div class="review-section">
-        <label>Food Quality</label>
-        <div class="star-rating" id="rating-food">
-          ${[5,4,3,2,1].map(i => `
-            <input type="radio" name="food" id="food-${i}" value="${i}">
-            <label for="food-${i}">★</label>
-          `).join('')}
+    <div class="menu-page">
+      <!-- Desktop Sidebar -->
+      <aside class="menu-sidebar">
+        <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
+          <div>
+            <div class="customer-header-title">SS Restaurant</div>
+            <div class="customer-header-table">Table ${tableNum}</div>
+          </div>
         </div>
-      </div>
+        
+        <nav class="sidebar-nav">
+          <a href="#/menu" class="nav-item">
+            <span>🏠</span> Menu
+          </a>
+          <a href="#/cart" class="nav-item">
+            <span>🛒</span> Your Cart
+          </a>
+          <a href="#/info" class="nav-item">
+            <span>ℹ️</span> Table Info
+          </a>
+          <a href="#/call" class="nav-item">
+            <span>📞</span> Call Waiter
+          </a>
+        </nav>
 
-      <div class="review-section">
-        <label>Service</label>
-        <div class="star-rating" id="rating-service">
-          ${[5,4,3,2,1].map(i => `
-            <input type="radio" name="service" id="service-${i}" value="${i}">
-            <label for="service-${i}">★</label>
-          `).join('')}
+        <div class="slogan-card">
+          <div class="slogan-text">Good food<br>Good mood ♡</div>
+          <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
         </div>
-      </div>
+      </aside>
 
-      <div class="review-section">
-        <label>Your Feedback</label>
-        <textarea id="review-feedback" class="form-input" placeholder="Tell us what you liked or how we can improve..." rows="4"></textarea>
-      </div>
+      <!-- Main Content -->
+      <main class="menu-main">
+        <div class="review-page">
+          <div style="text-align: center; margin-bottom: var(--space-2xl);">
+            <div style="font-size: 48px; margin-bottom: var(--space-md);">🎉</div>
+            <h2>Thank You!</h2>
+            <p class="review-subtitle">We'd love to hear about your experience</p>
+          </div>
 
-      <button class="btn btn-primary btn-full btn-lg" id="submit-review">
-        Submit Review
-      </button>
-      
-      <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
-        <button class="btn btn-secondary" style="flex:1;" id="download-receipt">
-          📥 Download Receipt
-        </button>
-        <button class="btn btn-ghost" style="flex:1;" id="skip-review">
-          Skip
-        </button>
-      </div>
+          <div class="review-section">
+            <label>Food Quality</label>
+            <div class="star-rating" id="rating-food">
+              ${[5,4,3,2,1].map(i => `
+                <input type="radio" name="food" id="food-${i}" value="${i}">
+                <label for="food-${i}">★</label>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="review-section">
+            <label>Service</label>
+            <div class="star-rating" id="rating-service">
+              ${[5,4,3,2,1].map(i => `
+                <input type="radio" name="service" id="service-${i}" value="${i}">
+                <label for="service-${i}">★</label>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="review-section">
+            <label>Your Feedback</label>
+            <textarea id="review-feedback" class="form-input" placeholder="Tell us what you liked or how we can improve..." rows="4"></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-full btn-lg" id="submit-review">
+            Submit Review
+          </button>
+          
+          <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
+            <button class="btn btn-secondary" style="flex:1;" id="download-receipt">
+              📥 Download Receipt
+            </button>
+            <button class="btn btn-ghost" style="flex:1;" id="skip-review">
+              Skip
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   `;
 

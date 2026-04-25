@@ -51,13 +51,14 @@ function renderLanding() {
 
   app.innerHTML = `
     <div class="landing-page">
-      <div class="landing-hero">
-        <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" />
-        <h1 class="landing-title">SS Restaurant</h1>
-        <p class="landing-subtitle">Please select your table to continue</p>
+      <div class="landing-hero" style="background: white; border-bottom: 1px solid var(--border-color);">
+        <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" style="width: 100px; height: 100px; margin-bottom: var(--space-xl);" />
+        <h1 class="landing-title" style="color: var(--color-primary); font-size: 2.5rem; margin-bottom: var(--space-xs);">SS Restaurant</h1>
+        <p class="landing-subtitle" style="color: var(--text-muted); font-size: var(--font-size-base); font-weight: var(--font-weight-medium);">Welcome to a premium dining experience</p>
         
-        <div class="landing-select-wrapper">
-          <select id="table-select" class="form-input">
+        <div class="landing-select-wrapper" style="max-width: 400px; margin: var(--space-2xl) auto 0;">
+          <label class="form-label" style="text-align: left; display: block; margin-bottom: var(--space-sm);">Choose your Table</label>
+          <select id="table-select" class="form-input" style="border-radius: var(--radius-lg); height: 54px; font-size: var(--font-size-base);">
             <option value="">— Select a Table —</option>
             ${availableTables.map(t => `
               <option value="${t.id}">Table ${t.number} (${t.capacity} seats)</option>
@@ -65,24 +66,26 @@ function renderLanding() {
           </select>
         </div>
         
-        <button id="landing-cta" class="btn btn-primary landing-cta" disabled>
-          Select a Table to Continue
+        <button id="landing-cta" class="btn btn-primary landing-cta" style="max-width: 400px; width: 100%; margin-top: var(--space-lg); border-radius: var(--radius-full); padding: 18px;" disabled>
+          Continue
         </button>
 
         ${availableTables.length === 0 ? `
-          <p style="color: var(--text-muted); margin-top: var(--space-md); font-size: var(--font-size-sm);">
-            All tables are currently occupied. Please wait or ask staff for assistance.
+          <p style="color: var(--color-error); margin-top: var(--space-lg); font-size: var(--font-size-sm); font-weight: 600;">
+            ⚠️ All tables are currently occupied.
           </p>
         ` : ''}
       </div>
 
-      <div class="landing-footer">
+      <div class="landing-footer" style="padding: var(--space-3xl) var(--space-xl); background: var(--bg-main);">
         <div class="landing-footer-inner">
           <div class="landing-contact">
+            <h4 style="margin-bottom: var(--space-md);">Contact Us</h4>
             <a href="tel:+919876543210">📞 +91 9876543210</a>
             <a href="mailto:hello@ssrestaurant.com">📧 hello@ssrestaurant.com</a>
           </div>
           <div class="landing-social">
+            <h4 style="margin-bottom: var(--space-md);">Follow Us</h4>
             <a href="https://www.instagram.com/" target="_blank">📸 Instagram</a>
             <a href="https://www.facebook.com/" target="_blank">📘 Facebook</a>
           </div>
@@ -90,11 +93,11 @@ function renderLanding() {
       </div>
 
       <!-- Chat Widget -->
-      <button class="chat-widget-btn" id="chat-widget-toggle" title="Complaints & Requests">💬</button>
+      <button class="chat-widget-btn" id="chat-widget-toggle" title="Complaints & Requests" style="background: var(--color-primary);">💬</button>
       <div class="chat-panel hidden" id="chat-panel">
-        <div class="chat-panel-header">
-          <h4>Complaints & Requests</h4>
-          <button class="modal-close" id="chat-close">✕</button>
+        <div class="chat-panel-header" style="background: var(--color-primary);">
+          <h4 style="color: white;">Complaints & Requests</h4>
+          <button class="modal-close" id="chat-close" style="color: white;">✕</button>
         </div>
         <div class="chat-panel-body">
           <div class="form-group">
