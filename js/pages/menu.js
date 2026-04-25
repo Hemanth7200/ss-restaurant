@@ -120,8 +120,8 @@ function renderMenu() {
       preview.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; color:var(--text-muted);">
           <div style="font-size:48px; margin-bottom:16px;">🛒</div>
-          <h4>Your Cart is Empty</h4>
-          <p style="font-size:12px;">Add items to see your bill summary here.</p>
+          <h4 style="color:var(--text-primary);">Your Cart is Empty</h4>
+          <p style="font-size:13px;">Add items to see your bill summary here.</p>
         </div>
       `;
       return;
@@ -129,16 +129,27 @@ function renderMenu() {
 
     preview.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-xl);">
-        <h3 style="margin:0;">Your Cart</h3>
-        <button class="btn btn-ghost btn-sm" onclick="Store.updateSession({cart:[]}); updateMenuDOM();">Clear Cart</button>
+        <div>
+          <h3 style="margin:0; font-size:20px; color:var(--text-primary);">Your Cart</h3>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Table ${tableNum}</div>
+        </div>
+        <button class="cart-item-remove" onclick="Store.updateSession({cart:[]}); updateMenuDOM();" title="Clear Cart">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
       </div>
 
       <div style="display:flex; flex-direction:column; gap:var(--space-md); margin-bottom:var(--space-2xl);">
         ${cart.map(item => `
-          <div class="cart-item" style="padding:10px; margin-bottom:0;">
+          <div class="cart-item" style="padding:12px; margin-bottom:0; box-shadow:none; border-color:var(--border-color);">
+            <div class="cart-item-img" style="width:60px; height:60px;">
+              <img src="${item.image}" alt="${item.name}" onerror="this.src='assets/logo.png'">
+            </div>
             <div class="cart-item-info">
-              <div class="cart-item-name" style="font-size:14px;">${item.name}</div>
-              <div class="cart-item-price">${Utils.formatPrice(item.price)}</div>
+              <div class="cart-item-name" style="font-size:14px;">
+                <span class="veg-indicator ${item.isVeg ? '' : 'nonveg'}" style="width:10px; height:10px; padding:1px; margin-right:4px;"></span>
+                ${item.name}
+              </div>
+              <div class="cart-item-price" style="font-size:14px; margin-top:2px;">${Utils.formatPrice(item.price)}</div>
             </div>
             <div class="qty-stepper">
               <button onclick="menuUpdateQty('${item.itemId}', ${item.quantity - 1})">−</button>
@@ -149,7 +160,7 @@ function renderMenu() {
         `).join('')}
       </div>
 
-      <div class="bill-summary" style="margin-top:0; padding:var(--space-lg);">
+      <div class="bill-summary" style="margin-top:0; padding:var(--space-lg); border-color:var(--border-color); box-shadow:none; background:var(--bg-main);">
         <div class="bill-row">
           <span>Subtotal</span>
           <span>${Utils.formatPrice(totals.subtotal)}</span>
@@ -158,14 +169,20 @@ function renderMenu() {
           <span>GST (5%)</span>
           <span>${Utils.formatPrice(totals.gst)}</span>
         </div>
-        <div class="bill-row total" style="margin-top:var(--space-md); padding-top:var(--space-md);">
+        <div class="bill-row total" style="margin-top:var(--space-md); padding-top:var(--space-md); font-size:20px;">
           <span>Grand Total</span>
           <span>${Utils.formatPrice(totals.total)}</span>
         </div>
         
-        <button class="btn btn-primary btn-full" style="margin-top:var(--space-xl);" onclick="Router.navigate('/details')">
+        <button class="btn btn-primary btn-full btn-lg" style="margin-top:var(--space-xl); box-shadow: 0 8px 20px var(--color-primary-glow);" onclick="Router.navigate('/details')">
           Proceed to Place Order • ${Utils.formatPrice(totals.total)}
         </button>
+
+        <div style="margin-top:20px; display:flex; align-items:center; justify-content:center; gap:16px; color:var(--text-muted); font-size:12px;">
+          <span style="display:flex; align-items:center; gap:4px;">🛡️ Secure</span>
+          <span style="display:flex; align-items:center; gap:4px;">⚡ Fast</span>
+          <span style="display:flex; align-items:center; gap:4px;">✨ Delicious</span>
+        </div>
       </div>
     `;
   }
