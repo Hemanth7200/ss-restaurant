@@ -7,12 +7,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
-  padding: 12px 24px;
+  gap: var(--space-md);
+  padding: 14px 28px;
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  transition: all var(--transition-base);
   white-space: nowrap;
   cursor: pointer;
   border: none;
@@ -107,11 +107,11 @@
 /* ---- Cards ---- */
 .card {
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-base);
 }
 
 .card:hover {
@@ -174,16 +174,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border: 1.5px solid var(--color-veg);
-  border-radius: 3px;
+  border-radius: 2px;
+  padding: 2px;
+  margin-right: 6px;
 }
 
 .veg-indicator::after {
   content: '';
-  width: 9px;
-  height: 9px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--color-veg);
 }
@@ -194,11 +196,6 @@
 
 .veg-indicator.nonveg::after {
   background: var(--color-nonveg);
-  border-radius: 0;
-  width: 0; height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 9px solid var(--color-nonveg);
 }
 
 /* ---- Chips ---- */
@@ -310,36 +307,37 @@ textarea.form-input {
 .qty-stepper {
   display: inline-flex;
   align-items: center;
-  gap: 0;
-  border: 1.5px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  gap: var(--space-md);
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: var(--radius-full);
 }
 
 .qty-stepper button {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  transition: background var(--transition-fast);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 50%;
+  font-size: 16px;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-fast);
 }
 
 .qty-stepper button:hover {
   background: var(--color-primary);
-  color: var(--text-inverse);
+  color: white;
 }
 
 .qty-stepper .qty-value {
-  min-width: 32px;
+  min-width: 20px;
   text-align: center;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
+  color: var(--text-primary);
 }
 
 /* ---- Star Rating ---- */

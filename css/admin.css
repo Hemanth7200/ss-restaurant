@@ -14,11 +14,11 @@
 
 .admin-sidebar-header {
   padding: var(--space-xl); display: flex; align-items: center; gap: var(--space-md);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.admin-sidebar-logo { width: 36px; height: 36px; border-radius: var(--radius-md); object-fit: cover; }
-.admin-sidebar-brand { color: #fff; font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); }
+.admin-sidebar-logo { width: 40px; height: 40px; border-radius: var(--radius-md); object-fit: cover; }
+.admin-sidebar-brand { color: var(--text-primary); font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); }
 
 .admin-sidebar-nav { flex: 1; padding: var(--space-md) 0; overflow-y: auto; }
 
@@ -29,11 +29,11 @@
   cursor: pointer; transition: all var(--transition-fast); border-left: 3px solid transparent;
 }
 
-.admin-nav-item:hover { background: var(--color-sidebar-hover); color: #fff; }
+.admin-nav-item:hover { background: var(--bg-input); color: var(--text-primary); }
 
 .admin-nav-item.active {
-  color: var(--color-sidebar-text-active); background: var(--color-sidebar-hover);
-  border-left-color: var(--color-primary);
+  color: var(--color-primary); 
+  background: var(--color-primary-light);
 }
 
 .admin-nav-item .nav-icon { font-size: 18px; width: 20px; text-align: center; }
@@ -219,7 +219,7 @@
 .bar-chart { display: flex; align-items: flex-end; gap: var(--space-sm); height: 200px; padding-top: var(--space-lg); }
 .bar-chart .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); }
 .bar-chart .bar {
-  width: 100%; max-width: 40px; background: linear-gradient(180deg, var(--color-primary) 0%, rgba(255,122,0,0.6) 100%);
+  width: 100%; max-width: 40px; background: var(--color-primary);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   transition: height var(--transition-slow); min-height: 4px;
 }

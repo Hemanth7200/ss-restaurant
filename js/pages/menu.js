@@ -16,40 +16,79 @@ function renderMenu() {
 
   app.innerHTML = `
     <div class="menu-page">
-      <header class="customer-header">
-        <div class="customer-header-left" style="cursor: pointer;" onclick="Router.navigate('/')">
-          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" />
+      <!-- Desktop Sidebar -->
+      <aside class="menu-sidebar">
+        <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
           <div>
             <div class="customer-header-title">SS Restaurant</div>
             <div class="customer-header-table">Table ${tableNum}</div>
           </div>
         </div>
-        <div class="customer-header-right">
-          <button class="cart-btn-pill" id="go-cart" title="View Cart">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-            Cart
-            <span class="cart-count-pill" id="cart-count">${cartCount || ''}</span>
-          </button>
+        
+        <nav class="sidebar-nav">
+          <a href="#/menu" class="nav-item active">
+            <span>🏠</span> Menu
+          </a>
+          <a href="#/cart" class="nav-item">
+            <span>🛒</span> Your Cart
+          </a>
+          <a href="#/info" class="nav-item">
+            <span>ℹ️</span> Table Info
+          </a>
+          <a href="#/call" class="nav-item">
+            <span>📞</span> Call Waiter
+          </a>
+        </nav>
+
+        <div class="slogan-card">
+          <div class="slogan-text">Good food<br>Good mood ♡</div>
+          <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
         </div>
-      </header>
+      </aside>
 
-      <div class="menu-search">
-        <div class="search-bar">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." />
+      <!-- Main Content (Mobile + Desktop Center) -->
+      <main class="menu-main">
+        <header class="customer-header">
+          <div class="customer-header-left" style="cursor: pointer;" onclick="Router.navigate('/')">
+            <img src="assets/logo.png" alt="Logo" class="customer-header-logo" />
+            <div>
+              <div class="customer-header-title">SS Restaurant</div>
+              <div class="customer-header-table">Table ${tableNum}</div>
+            </div>
+          </div>
+          <div class="customer-header-right">
+            <button class="cart-btn-pill" id="go-cart" title="View Cart">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Cart
+              <span class="cart-count-pill" id="cart-count">${cartCount || ''}</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="menu-search">
+          <div class="search-bar" style="max-width: 500px; margin: 0 auto;">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." style="border-radius: var(--radius-full);" />
+          </div>
         </div>
-      </div>
 
-      <div class="menu-categories" id="category-chips">
-        <button class="chip active" data-cat="all">All</button>
-        ${categories.map(c => `
-          <button class="chip" data-cat="${c.id}">${c.name}</button>
-        `).join('')}
-      </div>
+        <div class="menu-categories" id="category-chips">
+          <button class="chip active" data-cat="all">All</button>
+          ${categories.map(c => `
+            <button class="chip" data-cat="${c.id}">${c.name}</button>
+          `).join('')}
+        </div>
 
-      <div class="menu-grid" id="menu-grid">
+        <div class="menu-grid" id="menu-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </main>
+
+      <!-- Desktop Cart Preview -->
+      <aside class="menu-cart-preview" id="desktop-cart-preview">
         <!-- Rendered by JS -->
-      </div>
+      </aside>
     </div>
   `;
 
@@ -66,7 +105,69 @@ function renderMenu() {
         </div>
       `;
     }
-    return `<button class="btn-add" onclick="menuAddItem('${itemId}')">+ Add</button>`;
+    return `<button class="btn-add" onclick="menuAddItem('${itemId}')">+</button>`;
+  }
+
+  function renderDesktopCart() {
+    const preview = document.getElementById('desktop-cart-preview');
+    if (!preview) return;
+
+    const currentSession = Store.getCurrentSession();
+    const cart = currentSession.cart;
+    const totals = Store.getSessionTotal();
+
+    if (cart.length === 0) {
+      preview.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; color:var(--text-muted);">
+          <div style="font-size:48px; margin-bottom:16px;">🛒</div>
+          <h4>Your Cart is Empty</h4>
+          <p style="font-size:12px;">Add items to see your bill summary here.</p>
+        </div>
+      `;
+      return;
+    }
+
+    preview.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-xl);">
+        <h3 style="margin:0;">Your Cart</h3>
+        <button class="btn btn-ghost btn-sm" onclick="Store.updateSession({cart:[]}); updateMenuDOM();">Clear Cart</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:var(--space-md); margin-bottom:var(--space-2xl);">
+        ${cart.map(item => `
+          <div class="cart-item" style="padding:10px; margin-bottom:0;">
+            <div class="cart-item-info">
+              <div class="cart-item-name" style="font-size:14px;">${item.name}</div>
+              <div class="cart-item-price">${Utils.formatPrice(item.price)}</div>
+            </div>
+            <div class="qty-stepper">
+              <button onclick="menuUpdateQty('${item.itemId}', ${item.quantity - 1})">−</button>
+              <span class="qty-value">${item.quantity}</span>
+              <button onclick="menuUpdateQty('${item.itemId}', ${item.quantity + 1})">+</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="bill-summary" style="margin-top:0; padding:var(--space-lg);">
+        <div class="bill-row">
+          <span>Subtotal</span>
+          <span>${Utils.formatPrice(totals.subtotal)}</span>
+        </div>
+        <div class="bill-row">
+          <span>GST (5%)</span>
+          <span>${Utils.formatPrice(totals.gst)}</span>
+        </div>
+        <div class="bill-row total" style="margin-top:var(--space-md); padding-top:var(--space-md);">
+          <span>Grand Total</span>
+          <span>${Utils.formatPrice(totals.total)}</span>
+        </div>
+        
+        <button class="btn btn-primary btn-full" style="margin-top:var(--space-xl);" onclick="Router.navigate('/details')">
+          Proceed to Place Order • ${Utils.formatPrice(totals.total)}
+        </button>
+      </div>
+    `;
   }
 
   function renderMenuItems() {
@@ -85,6 +186,7 @@ function renderMenu() {
     }
 
     const currentSession = Store.getCurrentSession();
+    renderDesktopCart();
 
     if (items.length === 0) {
       if (!Store._dbLoaded) {
@@ -208,7 +310,7 @@ function updateMenuDOM(changedItemId) {
           </div>
         `;
       } else {
-        actionContainer.innerHTML = `<button class="btn-add" onclick="menuAddItem('${changedItemId}')">+ Add</button>`;
+        actionContainer.innerHTML = `<button class="btn-add" onclick="menuAddItem('${changedItemId}')">+</button>`;
       }
       return;
     }
