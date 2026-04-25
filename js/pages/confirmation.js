@@ -423,6 +423,8 @@ function renderReview() {
   const session = Store.getCurrentSession();
   const tableNum = session ? Utils.getTableNumber(session.tableId) : '---';
 
+  Store.updateSession({ currentStep: 'review' });
+
   app.innerHTML = `
     <div class="menu-page">
       <!-- Desktop Sidebar -->

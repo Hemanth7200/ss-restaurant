@@ -43,10 +43,11 @@ function renderLanding() {
     }
   }
 
-  // Clear any existing session if they navigate explicitly to the landing page without a table param
+  // Only redirect if session is already active for a specific table
   const session = Store.getCurrentSession();
-  if (session) {
-    Store.endSession();
+  if (session && session.currentStep) {
+     // If we are already in a session, app.js will handle the redirect.
+     // We only stay on landing if the user explicitly came here to change table or something.
   }
 
   app.innerHTML = `

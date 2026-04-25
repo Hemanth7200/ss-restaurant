@@ -30,13 +30,17 @@
   Router.register('/admin/tables', renderAdminTables);
   Router.register('/admin/users', renderAdminUsers);
 
-  // Session restore — if there's an active session and user is on landing, redirect
+  // Session restore — if there's an active session, ensure we are on the right step
   const session = Store.getCurrentSession();
   const hash = window.location.hash;
+  const currentPath = hash.replace('#', '').split('?')[0] || '/';
 
-  if (session && (!hash || hash === '#/' || hash === '#')) {
-    const step = session.currentStep || 'menu';
-    window.location.hash = '#/' + step;
+  if (session) {
+    const savedStep = '/' + (session.currentStep || 'menu');
+    // If on landing or a different customer page, redirect to the saved step
+    if (currentPath === '/' || currentPath === '') {
+      Router.navigate(savedStep);
+    }
   }
 
   // Initialize router
