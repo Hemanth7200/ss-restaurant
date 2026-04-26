@@ -223,40 +223,32 @@ const DB = {
   },
 
   async createOrder(order) {
-    if (!DB_ENABLED) return true;
+    if (!DB_ENABLED) return { success: true };
     
-    // We insert without the 'id' to let Supabase generate it atomically
-    const orderToInsert = {
-      session_id: order.sessionId,
-      table_id: order.tableId,
-      customer_name: order.customerName,
-      customer_phone: order.customerPhone,
-      special_instructions: order.specialInstructions || '',
-      subtotal: order.subtotal,
-      gst: order.gst,
-      total: order.total,
-      status: order.status || 'new',
-      created_at: order.createdAt
-    };
-
-    const { data: createdOrder, error: orderErr } = await supabaseClient
+    const { error: orderErr } = await supabaseClient
       .from('orders')
-      .insert(orderToInsert)
-      .select()
-      .single();
+      .insert({
+        id: order.id,
+        session_id: order.sessionId,
+        table_id: order.tableId,
+        customer_name: order.customerName,
+        customer_phone: order.customerPhone,
+        special_instructions: order.specialInstructions || '',
+        subtotal: order.subtotal,
+        gst: order.gst,
+        total: order.total,
+        status: order.status || 'new',
+        created_at: order.createdAt
+      });
 
     if (orderErr) { 
       console.error('❌ DB createOrder failed:', orderErr); 
-      return false; 
+      return { success: false, error: orderErr.message, code: orderErr.code }; 
     }
-
-    const finalOrderId = createdOrder.id;
-    // Update the local order object with the real ID from DB
-    order.id = finalOrderId;
 
     if (order.items && order.items.length > 0) {
       const items = order.items.map(item => ({
-        order_id: finalOrderId,
+        order_id: order.id,
         item_id: item.itemId,
         item_name: item.name,
         item_price: item.price,
@@ -269,7 +261,7 @@ const DB = {
         console.error('❌ DB createOrder items failed:', itemsErr);
       }
     }
-    return true;
+    return { success: true };
   },
 
   async getOrders() {

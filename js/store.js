@@ -471,41 +471,66 @@ const Store = {
     const gst = Number((subtotal * GST_RATE).toFixed(2));
     const total = Number((subtotal + gst).toFixed(2));
     
-    let orderId = this._state.nextOrderId; // Fallback for local mode
-    const order = {
-      id: orderId,
-      sessionId: session.id,
-      tableId: session.tableId,
-      items: [...session.cart],
-      customerName: customerInfo.name,
-      customerPhone: customerInfo.phone,
-      specialInstructions: specialInstructions || '',
-      subtotal: subtotal,
-      gst: gst,
-      total: total,
-      status: 'new',
-      createdAt: new Date().toISOString()
-    };
+    let orderId = this._state.nextOrderId;
+    let finalOrder = null;
+    let orderResult = null;
 
-    const success = await DB.createOrder(order);
-    
-    if (success) {
-      // If DB created it, 'order.id' was updated inside DB.createOrder (see supabase.js)
+    // Try up to 5 times to avoid duplicate Order IDs if multiple devices order simultaneously
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (DB_ENABLED) {
+        const dbNextId = await DB.getNextOrderId();
+        if (dbNextId) orderId = dbNextId;
+      }
+
+      const order = {
+        id: orderId,
+        sessionId: session.id,
+        tableId: session.tableId,
+        items: [...session.cart],
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        specialInstructions: specialInstructions || '',
+        subtotal: subtotal,
+        gst: gst,
+        total: total,
+        status: 'new',
+        createdAt: new Date().toISOString()
+      };
+
+      orderResult = await DB.createOrder(order);
+      
+      if (orderResult === true || (orderResult && orderResult.success)) {
+        finalOrder = order;
+        break;
+      } else {
+        // If it's a duplicate key error (code 23505), retry immediately with a fresh ID
+        if (orderResult && orderResult.code === '23505') {
+          console.warn('⚠️ ID collision, retrying...', orderId);
+          await new Promise(r => setTimeout(r, Math.random() * 200));
+          continue;
+        }
+        // For other errors, stop and report
+        break;
+      }
+    }
+
+    if (finalOrder) {
       // Update local state
-      this.update('orders', orders => [...orders, order]);
-      this.update('nextOrderId', id => Math.max(id, order.id + 1));
+      this.update('orders', orders => [...orders, finalOrder]);
+      this.update('nextOrderId', id => Math.max(id, finalOrder.id + 1));
       
       // Update session and clear cart
       await this.updateSession({ 
         cart: [], 
-        orders: [...session.orders, order.id],
+        orders: [...session.orders, finalOrder.id],
         customerInfo: customerInfo 
       });
 
-      return { success: true, order: order };
+      return { success: true, order: finalOrder };
     }
 
-    return { success: false, error: 'Failed to place order. Please check your connection or contact staff.' };
+    const errorMsg = orderResult && orderResult.error ? orderResult.error : 'Failed to place order. Please check your connection or contact staff.';
+    return { success: false, error: errorMsg };
   },
 
   // ---- Payment Helpers ----
