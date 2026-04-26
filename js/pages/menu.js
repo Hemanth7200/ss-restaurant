@@ -273,8 +273,9 @@ function renderMenu() {
       const gradient = Utils.getFoodGradient(item.image);
 
       return `
+      return `
         <div class="menu-card" data-id="${item.id}">
-          <div class="menu-card-img">
+          <div class="menu-card-img" onclick="showItemDetails('${item.id}')">
             ${isUrl
               ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" loading="lazy" onerror="this.onerror=null; this.src='assets/logo.png'; this.style.objectFit='contain';" />`
               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;background:${gradient}">${itemImage || '🍽️'}</div>`
@@ -282,7 +283,7 @@ function renderMenu() {
           </div>
           <div class="menu-card-info">
             <span class="veg-indicator ${item.isVeg ? '' : 'nonveg'}"></span>
-            <div class="menu-card-name">${Utils.escapeHtml(item.name)}</div>
+            <div class="menu-card-name" onclick="showItemDetails('${item.id}')">${Utils.escapeHtml(item.name)}</div>
             <div class="menu-card-desc">${Utils.escapeHtml(item.description)}</div>
             <div class="menu-card-bottom">
               <span class="menu-card-price">${Utils.formatPrice(item.price)}</span>
@@ -427,5 +428,126 @@ function updateMenuDOM(changedItemId) {
 
   if (window._menuRenderItems) {
     window._menuRenderItems();
+  }
+}
+
+// ---- Menu Item Details Modal ----
+function showItemDetails(itemId) {
+  const items = Store.get('menuItems') || [];
+  const item = items.find(m => m.id === itemId);
+  if (!item) return;
+
+  const session = Store.getCurrentSession();
+  const cartItem = session.cart.find(c => c.itemId === itemId);
+  const qty = cartItem ? cartItem.quantity : 0;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'item-details-modal';
+  
+  const itemImage = item.image;
+  const isUrl = itemImage && (itemImage.startsWith('http') || itemImage.startsWith('/') || itemImage.startsWith('assets') || itemImage.startsWith('data:image'));
+  const gradient = Utils.getFoodGradient(item.image);
+
+  overlay.innerHTML = `
+    <div class="item-modal-content">
+      <button class="modal-close-btn" onclick="closeItemDetails()">✕</button>
+      
+      <div class="item-modal-left">
+        <div class="item-modal-img-container">
+          ${isUrl
+            ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" />`
+            : `<div class="item-modal-placeholder" style="background:${gradient}">${itemImage || '🍽️'}</div>`
+          }
+        </div>
+      </div>
+      
+      <div class="item-modal-right">
+        <div class="item-modal-header">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span class="veg-indicator ${item.isVeg ? '' : 'nonveg'}"></span>
+            <h2 class="item-modal-name">${Utils.escapeHtml(item.name)}</h2>
+          </div>
+          <p class="item-modal-desc">${Utils.escapeHtml(item.description || 'No description available.')}</p>
+        </div>
+        
+        <div class="item-modal-info-section">
+          <h4>Details</h4>
+          <div class="item-info-grid">
+            <div class="info-item">
+              <span class="info-label">Type</span>
+              <span class="info-value">${item.isVeg ? 'Veg' : 'Non-Veg'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Category</span>
+              <span class="info-value">${item.category_name || 'Main Course'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-modal-footer">
+          <div class="item-modal-price">${Utils.formatPrice(item.price)}</div>
+          <div class="item-modal-actions" id="modal-actions-${item.id}">
+            ${qty > 0 ? `
+              <div class="qty-stepper">
+                <button onclick="modalUpdateQty('${item.id}', ${qty - 1})">−</button>
+                <span class="qty-value">${qty}</span>
+                <button onclick="modalUpdateQty('${item.id}', ${qty + 1})">+</button>
+              </div>
+            ` : `
+              <button class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-full);" onclick="modalAddItem('${item.id}')">Add to Cart</button>
+            `}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  
+  // Close on backdrop click
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeItemDetails();
+  });
+}
+
+function closeItemDetails() {
+  const modal = document.getElementById('item-details-modal');
+  if (modal) modal.remove();
+}
+
+function modalAddItem(itemId) {
+  menuAddItem(itemId);
+  // Update modal actions
+  const items = Store.get('menuItems') || [];
+  const item = items.find(m => m.id === itemId);
+  const actionContainer = document.getElementById(`modal-actions-${itemId}`);
+  if (actionContainer) {
+    actionContainer.innerHTML = `
+      <div class="qty-stepper">
+        <button onclick="modalUpdateQty('${itemId}', 0)">−</button>
+        <span class="qty-value">1</span>
+        <button onclick="modalUpdateQty('${itemId}', 2)">+</button>
+      </div>
+    `;
+  }
+}
+
+function modalUpdateQty(itemId, qty) {
+  menuUpdateQty(itemId, qty);
+  // Update modal actions
+  const actionContainer = document.getElementById(`modal-actions-${itemId}`);
+  if (actionContainer) {
+    if (qty > 0) {
+      actionContainer.innerHTML = `
+        <div class="qty-stepper">
+          <button onclick="modalUpdateQty('${itemId}', ${qty - 1})">−</button>
+          <span class="qty-value">${qty}</span>
+          <button onclick="modalUpdateQty('${itemId}', ${qty + 1})">+</button>
+        </div>
+      `;
+    } else {
+      actionContainer.innerHTML = `<button class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-full);" onclick="modalAddItem('${itemId}')">Add to Cart</button>`;
+    }
   }
 }
