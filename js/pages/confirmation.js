@@ -237,7 +237,6 @@ function renderPayment() {
   const customerInfo = session.customerInfo || { name: '', phone: '' };
 
   const cashSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v0a2 2 0 0 0-2 2"/><path d="M18 6v0a2 2 0 0 1 2 2"/><path d="M6 18v0a2 2 0 0 1-2-2"/><path d="M18 18v0a2 2 0 0 0 2-2"/></svg>`;
-  const upiSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/><path d="M9 8l3-2 3 2"/><path d="M9 12l3 2 3-2"/></svg>`;
   const onlineSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M7 15h.01"/><path d="M11 15h2"/></svg>`;
 
   app.innerHTML = `
@@ -295,8 +294,7 @@ function renderPayment() {
           <h3 style="margin-top: var(--space-2xl); margin-bottom: var(--space-md); font-size: var(--font-size-base);">Select Payment Method</h3>
           <div class="payment-options" style="max-width: 500px;">
             <div class="payment-option" data-method="cash"><div class="payment-option-icon">${cashSvg}</div><div class="payment-option-text"><h4>Cash</h4><p>Pay at the reception counter</p></div></div>
-            <div class="payment-option" data-method="upi"><div class="payment-option-icon">${upiSvg}</div><div class="payment-option-text"><h4>UPI</h4><p>Pay via UPI app</p></div></div>
-            <div class="payment-option" data-method="online"><div class="payment-option-icon">${onlineSvg}</div><div class="payment-option-text"><h4>Online</h4><p>Cards, Netbanking, Wallets</p></div></div>
+            <div class="payment-option" data-method="online"><div class="payment-option-icon">${onlineSvg}</div><div class="payment-option-text"><h4>Online</h4><p>UPI, Cards, Netbanking, Wallets</p></div></div>
           </div>
           <div id="payment-action-area" style="max-width: 500px; width: 100%;"></div>
         </div>
@@ -343,12 +341,7 @@ function renderPayment() {
     startPaymentPolling();
   }
 
-  function renderUPIPayment(area) {
-    const upiId = 'hemanthrajudayakumar@oksbi';
-    const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('SS Restaurant')}&am=${totals.total.toFixed(2)}&cu=INR&tn=${encodeURIComponent('SS Restaurant Table ' + tableNum)}`;
-    area.innerHTML = `<div class="payment-message"><p style="font-weight:700;font-size:1.5rem;margin-bottom:var(--space-xs);">${Utils.formatPrice(totals.total)}</p><a href="${upiLink}" class="btn btn-primary btn-full" style="text-decoration:none;">Pay with UPI App</a><p style="color:var(--text-muted);font-size:var(--font-size-xs);margin-top:var(--space-md);">UPI ID: <strong>${upiId}</strong></p><div class="payment-waiting-status" id="upi-status"><div class="payment-spinner"></div><span>Waiting for admin confirmation...</span></div></div>`;
-    startPaymentPolling();
-  }
+
 
   function renderOnlinePayment(area) {
     area.innerHTML = `<div class="payment-message"><p style="font-weight:700;font-size:1.5rem;margin-bottom:var(--space-xs);">${Utils.formatPrice(totals.total)}</p><p style="color:var(--text-muted);font-size:var(--font-size-xs);margin-bottom:var(--space-lg);">Secure Online Payment via Razorpay</p><button class="btn btn-primary btn-full" id="rzp-pay-btn">Pay Now with Razorpay</button></div>`;
@@ -391,7 +384,6 @@ function renderPayment() {
       Store.updateSession({ paymentMethod: method, paymentStatus: 'pending' });
       if (DB_ENABLED) DB.updateSession(session.id, { paymentMethod: method });
       if (method === 'cash') renderCashPayment(area);
-      if (method === 'upi') renderUPIPayment(area);
       if (method === 'online') renderOnlinePayment(area);
     });
   });
