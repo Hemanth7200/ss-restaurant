@@ -365,7 +365,27 @@ function renderPayment() {
       image: 'assets/logo.png',
       handler(response) { handlePaymentSuccess(response.razorpay_payment_id, 'online'); },
       prefill: { name: customerInfo.name || '', contact: customerInfo.phone || '' },
-      theme: { color: '#C76A1C' }
+      theme: { color: '#C76A1C' },
+      method: {
+        upi: true,
+        card: true,
+        netbanking: true,
+        wallet: true
+      },
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: 'Pay using UPI',
+              instruments: [{ method: 'upi' }]
+            }
+          },
+          sequence: ['block.upi', 'block.card', 'block.netbanking', 'block.wallet'],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      }
     };
     const rzp = new Razorpay(options);
     rzp.on('payment.failed', (response) => {
