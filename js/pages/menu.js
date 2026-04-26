@@ -606,8 +606,4 @@ function modalConfirmAdd(itemId) {
   updateMenuDOM(itemId);
   closeItemDetails();
   
-  // Show toast
-  if (window.showToast) {
-    showToast(`${item.name} × ${qty} added to cart!`, 'success');
-  }
 }
