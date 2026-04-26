@@ -149,6 +149,8 @@ function renderAdminOrders() {
                 }
               }
 
+              const sessionNum = session && session.sessionNumber ? Utils.formatSessionNumber(session.sessionNumber) : '';
+
               return `
               <div class="order-card">
                 <div class="order-card-header">
@@ -165,7 +167,10 @@ function renderAdminOrders() {
                       <span>👤 ${Utils.escapeHtml(order.customerName)}</span>
                       <span style="font-size:0.85em; color:var(--text-muted);">📞 ${Utils.escapeHtml(order.customerPhone || 'N/A')}</span>
                     </span>
-                    <span>📍 Table ${Utils.getTableNumber(order.tableId)}</span>
+                    <span style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                      <span>📍 Table ${Utils.getTableNumber(order.tableId)}</span>
+                      ${sessionNum ? `<span style="font-size:0.8em;color:var(--color-primary);font-weight:600;">${sessionNum}</span>` : ''}
+                    </span>
                   </div>
                   <div class="order-items-list">
                     ${order.items.map(item => `

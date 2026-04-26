@@ -95,6 +95,7 @@ const Store = {
     if (!this._state.sessions) this._state.sessions = [];
     if (!this._state.reviews) this._state.reviews = [];
     if (this._state.nextOrderId === undefined) this._state.nextOrderId = STARTING_ORDER_ID;
+    if (this._state.nextSessionNumber === undefined) this._state.nextSessionNumber = 1;
     if (!this._state.currentSession) this._state.currentSession = null;
     if (!this._state.adminAuth) this._state.adminAuth = null;
     if (!this._state.complaints) this._state.complaints = [];
@@ -355,8 +356,12 @@ const Store = {
     }
 
     const sessionId = 'sess-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+    const sessionNumber = this._state.nextSessionNumber || 1;
+    this.update('nextSessionNumber', n => (n || 1) + 1);
+
     const session = {
       id: sessionId,
+      sessionNumber: sessionNumber,
       tableId: tableId,
       cart: [],
       orders: [],
@@ -402,6 +407,7 @@ const Store = {
 
     const session = {
       id: dbSession.id,
+      sessionNumber: dbSession.sessionNumber || null,
       tableId: dbSession.tableId,
       cart: [],
       orders: sessionOrders,

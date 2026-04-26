@@ -133,7 +133,7 @@ function renderConfirmation() {
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
               <circle cx="12" cy="10" r="3"/>
             </svg>
-            Table ${tableNum}
+            Table ${tableNum} ${session.sessionNumber ? `<span style="margin-left:8px;font-weight:700;color:var(--color-primary);">• ${Utils.formatSessionNumber(session.sessionNumber)}</span>` : ''}
           </div>
 
           <!-- Combined Order Details Card -->
