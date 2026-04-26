@@ -738,30 +738,53 @@ h1, h2, h3, h4, h5, h6 {
     padding: 12px !important;
     margin-top: var(--space-md) !important;
   }
+  .landing-page {
+    height: 100dvh !important;
+    min-height: -webkit-fill-available !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 0 !important;
+  }
+  .landing-hero {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: var(--space-md) var(--space-base) !important;
+  }
   .landing-footer {
-    padding: var(--space-lg) var(--space-base) !important;
-    margin-top: var(--space-2xl) !important; /* Increased from space-md to push it down */
-    border-top: none !important;
-    width: 100%;
+    padding: var(--space-md) var(--space-lg) !important;
+    margin-top: 0 !important;
+    background: white !important;
+    border-top: 1px solid var(--border-color) !important;
+    width: 100% !important;
   }
   .landing-footer-inner {
-    gap: var(--space-xl) !important; /* Increased gap for better centering of the two columns */
-    justify-content: center !important;
     display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+  .landing-contact {
+    text-align: left !important;
+    flex: 1;
+  }
+  .landing-social {
+    text-align: right !important;
+    flex: 1;
   }
   .landing-footer h4 {
-    margin-bottom: 6px !important;
+    margin-bottom: 4px !important;
     font-size: 13px !important;
-    text-align: center;
+    text-align: inherit !important;
   }
   .landing-footer a {
     font-size: 11px !important;
-    text-align: center;
-    display: block; /* Ensure full-width centering */
-  }
-  .landing-page {
-    justify-content: center !important;
-    gap: 0; /* Remove gap if we use margin-top on footer for more control */
+    text-align: inherit !important;
+    display: block;
+    margin-bottom: 2px;
   }
 }
 
