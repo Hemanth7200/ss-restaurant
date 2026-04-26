@@ -54,7 +54,7 @@ function renderMenu() {
             <div class="cart-icon-container" id="go-cart" title="View Cart">
               <div class="cart-icon-box">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                <span class="cart-badge" id="cart-count">${cartCount || ''}</span>
+                <span class="cart-badge" id="cart-count" style="display: ${cartCount > 0 ? 'flex' : 'none'};">${cartCount || ''}</span>
               </div>
             </div>
           </div>
@@ -373,7 +373,9 @@ function updateMenuDOM(changedItemId) {
 
   const cartCountEl = document.getElementById('cart-count');
   if (cartCountEl) {
-    cartCountEl.textContent = session.cart.length || '';
+    const count = session.cart.length;
+    cartCountEl.textContent = count || '';
+    cartCountEl.style.display = count > 0 ? 'flex' : 'none';
   }
 
   if (changedItemId) {
