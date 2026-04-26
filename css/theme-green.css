@@ -674,17 +674,19 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .menu-card .btn-add {
-    min-width: 36px;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 0;
-  }
-
-  .menu-card .btn-add::after {
-    content: '+';
-    font-size: 20px;
+    min-width: 68px;
+    width: auto;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
   }
 

@@ -107,7 +107,7 @@ function renderMenu() {
         </div>
       `;
     }
-    return `<button class="btn-add" onclick="menuAddItem('${itemId}')">+</button>`;
+    return `<button class="btn-add" onclick="menuAddItem('${itemId}')">+ Add</button>`;
   }
 
   function renderDesktopCart() {
@@ -389,7 +389,7 @@ function updateMenuDOM(changedItemId) {
           </div>
         `;
       } else {
-        actionContainer.innerHTML = `<button class="btn-add" onclick="menuAddItem('${changedItemId}')">+</button>`;
+        actionContainer.innerHTML = `<button class="btn-add" onclick="menuAddItem('${changedItemId}')">+ Add</button>`;
       }
     }
   }
