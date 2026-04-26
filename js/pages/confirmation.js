@@ -12,6 +12,43 @@ function renderConfirmation() {
   const tableNum = Utils.getTableNumber(session.tableId);
   const lastOrderId = session.orders[session.orders.length - 1];
   const lastOrder = Store.get('orders').find(o => o.id === lastOrderId);
+  const menuItems = Store.get('menuItems') || [];
+
+  // Calculate totals for the last order
+  let subtotal = 0;
+  if (lastOrder) {
+    lastOrder.items.forEach(item => {
+      subtotal += item.price * item.quantity;
+    });
+  }
+  const tax = Math.round(subtotal * 0.05);
+  const totalAmount = subtotal + tax;
+
+  // Build order items HTML with images
+  let orderItemsHtml = '';
+  if (lastOrder) {
+    orderItemsHtml = lastOrder.items.map(item => {
+      const menuItem = menuItems.find(m => m.name === item.name);
+      const img = menuItem ? menuItem.image : '';
+      const isUrl = img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('assets') || img.startsWith('data:image'));
+      const imgHtml = isUrl
+        ? `<img src="${img}" alt="${Utils.escapeHtml(item.name)}" class="confirm-item-img" />`
+        : `<div class="confirm-item-img confirm-item-emoji">${img || '🍽️'}</div>`;
+
+      return `
+        <div class="confirm-order-item">
+          <div class="confirm-item-left">
+            ${imgHtml}
+            <div>
+              <div class="confirm-item-name">${Utils.escapeHtml(item.name)}</div>
+              <div class="confirm-item-qty">x ${item.quantity}</div>
+            </div>
+          </div>
+          <div class="confirm-item-price">${Utils.formatPrice(item.price * item.quantity)}</div>
+        </div>
+      `;
+    }).join('');
+  }
 
   app.innerHTML = `
     <div class="menu-page">
@@ -48,43 +85,120 @@ function renderConfirmation() {
 
       <!-- Main Content -->
       <main class="menu-main">
-        <div class="confirmation-page">
-          <div class="confirmation-check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+        <div class="confirm-wrapper">
+          <!-- Hero Banner -->
+          <div class="confirm-hero">
+            <div class="confirm-hero-pattern">🍕 🌶️ 🍗 🥗 🍰 🍜 🧁 🍕 🌶️ 🍗 🥗</div>
+            <div class="confirm-check-badge">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="#16a34a"/>
+                <polyline points="16 8.5 10.5 15 8 12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
           </div>
 
-          <h2>Order Placed!</h2>
-          <p style="color: var(--text-secondary);">Your delicious food is being prepared</p>
+          <!-- Title -->
+          <div class="confirm-title-section">
+            <h2 class="confirm-heading">Order Placed!</h2>
+            <p class="confirm-subtitle">Your delicious food is being prepared</p>
+          </div>
 
-          <div class="order-id">#${lastOrderId || '---'}</div>
+          <!-- Order ID Card -->
+          <div class="confirm-id-card">
+            <span class="confirm-id-label">ORDER ID</span>
+            <div class="confirm-id-number">
+              <span class="confirm-id-decor">🍽️</span>
+              #${lastOrderId ? lastOrderId.replace('ord-', '') : '---'}
+              <span class="confirm-id-decor">🍽️</span>
+            </div>
+          </div>
 
-          <p class="table-info">📍 Table ${tableNum}</p>
+          <!-- Table Info -->
+          <div class="confirm-table-info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Table ${tableNum}
+          </div>
 
+          <!-- Order Details Card -->
           ${lastOrder ? `
-            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-xl); width: 100%; max-width: 400px; text-align: left;">
-              <h4 style="margin-bottom: var(--space-md); font-size: var(--font-size-sm); color: var(--text-muted);">Current Order Details</h4>
-              ${lastOrder.items.map(item => `
-                <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: var(--font-size-sm);">
-                  <span>${item.name} × ${item.quantity}</span>
-                  <span style="font-weight: 600;">${Utils.formatPrice(item.price * item.quantity)}</span>
-                </div>
-              `).join('')}
-              <div style="border-top: 1px dashed var(--border-color); margin-top: var(--space-sm); padding-top: var(--space-sm); display: flex; justify-content: space-between; font-weight: 700; font-size: var(--font-size-base);">
-                <span>Total</span>
-                <span>${Utils.formatPrice(lastOrder.total)}</span>
+          <div class="confirm-details-card">
+            <div class="confirm-details-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              <span>ORDER DETAILS</span>
+            </div>
+
+            <div class="confirm-items-list">
+              ${orderItemsHtml}
+            </div>
+
+            <div class="confirm-totals">
+              <div class="confirm-total-row">
+                <span>Subtotal</span>
+                <span>${Utils.formatPrice(subtotal)}</span>
+              </div>
+              <div class="confirm-total-row">
+                <span>Tax & Charges</span>
+                <span>${Utils.formatPrice(tax)}</span>
+              </div>
+              <div class="confirm-total-row confirm-grand-total">
+                <span>Total Amount</span>
+                <span>${Utils.formatPrice(totalAmount)}</span>
               </div>
             </div>
+          </div>
           ` : ''}
 
-          <div class="confirmation-actions" style="max-width: 400px; width: 100%;">
-            <button class="btn btn-primary btn-full" id="back-to-menu">
-              ➕ Order More Items
+          <!-- Action Buttons -->
+          <div class="confirm-actions">
+            <button class="confirm-btn-primary" id="back-to-menu">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              Order More Items
             </button>
-            <button class="btn btn-secondary btn-full" id="go-to-payment" style="margin-top: var(--space-md);">
-              💰 View Bill & Pay
+            <button class="confirm-btn-outline" id="go-to-payment">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              View Bill & Pay
             </button>
+          </div>
+
+          <!-- Thank You Section -->
+          <div class="confirm-thankyou">
+            <div class="confirm-thankyou-icon">🍛</div>
+            <div class="confirm-thankyou-text">
+              <p class="confirm-thankyou-title">Thank you for choosing us!</p>
+              <p class="confirm-thankyou-sub">We hope you enjoy your meal. ♡</p>
+            </div>
+          </div>
+
+          <!-- Bottom Feature Icons -->
+          <div class="confirm-features">
+            <div class="confirm-feature">
+              <span class="confirm-feature-icon">🥬</span>
+              <span class="confirm-feature-title">Fresh Ingredients</span>
+              <span class="confirm-feature-desc">Always fresh & quality</span>
+            </div>
+            <div class="confirm-feature">
+              <span class="confirm-feature-icon">⏱️</span>
+              <span class="confirm-feature-title">On Time Delivery</span>
+              <span class="confirm-feature-desc">Fast & reliable</span>
+            </div>
+            <div class="confirm-feature">
+              <span class="confirm-feature-icon">✨</span>
+              <span class="confirm-feature-title">Hygienic Food</span>
+              <span class="confirm-feature-desc">100% safe & clean</span>
+            </div>
+            <div class="confirm-feature">
+              <span class="confirm-feature-icon">❤️</span>
+              <span class="confirm-feature-title">Made with Love</span>
+              <span class="confirm-feature-desc">Cooked with care</span>
+            </div>
           </div>
         </div>
       </main>
