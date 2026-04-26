@@ -224,8 +224,9 @@ const DB = {
 
   async createOrder(order) {
     if (!DB_ENABLED) return true;
-    const { error: orderErr } = await supabaseClient.from('orders').insert({
-      id: order.id,
+    
+    // We insert without the 'id' to let Supabase generate it atomically
+    const orderToInsert = {
       session_id: order.sessionId,
       table_id: order.tableId,
       customer_name: order.customerName,
@@ -236,15 +237,26 @@ const DB = {
       total: order.total,
       status: order.status || 'new',
       created_at: order.createdAt
-    });
+    };
+
+    const { data: createdOrder, error: orderErr } = await supabaseClient
+      .from('orders')
+      .insert(orderToInsert)
+      .select()
+      .single();
+
     if (orderErr) { 
-      console.error('DB createOrder:', orderErr); 
+      console.error('❌ DB createOrder failed:', orderErr); 
       return false; 
     }
 
+    const finalOrderId = createdOrder.id;
+    // Update the local order object with the real ID from DB
+    order.id = finalOrderId;
+
     if (order.items && order.items.length > 0) {
       const items = order.items.map(item => ({
-        order_id: order.id,
+        order_id: finalOrderId,
         item_id: item.itemId,
         item_name: item.name,
         item_price: item.price,
@@ -253,7 +265,9 @@ const DB = {
         image: item.image
       }));
       const { error: itemsErr } = await supabaseClient.from('order_items').insert(items);
-      if (itemsErr) console.error('DB createOrder items:', itemsErr);
+      if (itemsErr) {
+        console.error('❌ DB createOrder items failed:', itemsErr);
+      }
     }
     return true;
   },

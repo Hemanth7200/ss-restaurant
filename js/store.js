@@ -272,13 +272,23 @@ const Store = {
   // ---- Session Helpers ----
   async startSession(tableId) {
     const currentSession = this.getCurrentSession();
+    
+    // If we have an active session for this exact table, just return it
     if (currentSession && currentSession.tableId === tableId) {
       return currentSession;
     }
 
+    // If they have an active session for a DIFFERENT table...
     if (currentSession && currentSession.tableId !== tableId) {
-      Toast.error('You already have an active order for Table ' + Utils.getTableNumber(currentSession.tableId) + '. Please complete it first.');
-      return null;
+      // If they haven't placed any orders yet, allow them to switch tables!
+      if (currentSession.orders.length === 0) {
+        console.log('🔄 Switching table from', currentSession.tableId, 'to', tableId);
+        // We will create a new session below
+      } else {
+        // They have real orders, don't let them switch without completing/paying
+        Toast.error('You already have an active order for Table ' + Utils.getTableNumber(currentSession.tableId) + '. Please complete it first.');
+        return null;
+      }
     }
 
     // Allow users to browse a table until first order is placed.
@@ -461,66 +471,41 @@ const Store = {
     const gst = Number((subtotal * GST_RATE).toFixed(2));
     const total = Number((subtotal + gst).toFixed(2));
     
-    let orderId = this._state.nextOrderId;
-    let finalOrder = null;
-    let orderSuccess = false;
+    let orderId = this._state.nextOrderId; // Fallback for local mode
+    const order = {
+      id: orderId,
+      sessionId: session.id,
+      tableId: session.tableId,
+      items: [...session.cart],
+      customerName: customerInfo.name,
+      customerPhone: customerInfo.phone,
+      specialInstructions: specialInstructions || '',
+      subtotal: subtotal,
+      gst: gst,
+      total: total,
+      status: 'new',
+      createdAt: new Date().toISOString()
+    };
 
-    // Try up to 5 times to avoid duplicate Order IDs if multiple devices order simultaneously
-    for (let attempt = 0; attempt < 5; attempt++) {
-      if (DB_ENABLED) {
-        const dbNextId = await DB.getNextOrderId();
-        if (dbNextId) orderId = dbNextId;
-      }
-
-      const order = {
-        id: orderId,
-        sessionId: session.id,
-        tableId: session.tableId,
-        items: [...session.cart],
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
-        specialInstructions: specialInstructions || '',
-        subtotal: subtotal,
-        gst: gst,
-        total: total,
-        status: 'new',
-        createdAt: new Date().toISOString()
-      };
-
-      if (DB_ENABLED) {
-        const success = await DB.createOrder(order);
-        if (success) {
-          orderSuccess = true;
-          finalOrder = order;
-          break;
-        } else {
-          // Collision occurred, wait a bit and retry
-          await new Promise(r => setTimeout(r, Math.random() * 500));
-          // Will fetch nextOrderId in next loop iteration
-        }
-      } else {
-        // Local mode
-        orderSuccess = true;
-        finalOrder = order;
-        break;
-      }
-    }
-    if (orderSuccess && finalOrder) {
+    const success = await DB.createOrder(order);
+    
+    if (success) {
+      // If DB created it, 'order.id' was updated inside DB.createOrder (see supabase.js)
       // Update local state
-      this.update('orders', orders => [...orders, finalOrder]);
-      this.update('nextOrderId', id => Math.max(id, finalOrder.id + 1));
+      this.update('orders', orders => [...orders, order]);
+      this.update('nextOrderId', id => Math.max(id, order.id + 1));
       
       // Update session and clear cart
       await this.updateSession({ 
         cart: [], 
-        orders: [...session.orders, finalOrder.id],
+        orders: [...session.orders, order.id],
         customerInfo: customerInfo 
       });
 
-      return { success: true, order: finalOrder };
+      return { success: true, order: order };
     }
 
-    return { success: false, error: 'Database insertion failed after multiple attempts. Possible ID collision or connection issue.' };
+    return { success: false, error: 'Failed to place order. Please check your connection or contact staff.' };
   },
 
   // ---- Payment Helpers ----

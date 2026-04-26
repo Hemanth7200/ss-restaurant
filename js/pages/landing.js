@@ -20,11 +20,17 @@ function renderLanding() {
         return;
       }
       
-      // If they have an active session for a DIFFERENT table, block them!
+      // If they have an active session for a DIFFERENT table...
       if (currentSession && currentSession.tableId !== table.id) {
-        Toast.error("You already have an active order for Table " + Utils.getTableNumber(currentSession.tableId) + ". Please complete it first.");
-        Router.navigate('/' + (currentSession.currentStep || 'menu'));
-        return;
+        if (currentSession.orders.length === 0) {
+          // Allow switching!
+          console.log('🔄 QR Switch table allowed');
+        } else {
+          // Block if they have real orders
+          Toast.error("You already have an active order for Table " + Utils.getTableNumber(currentSession.tableId) + ". Please complete it first.");
+          Router.navigate('/' + (currentSession.currentStep || 'menu'));
+          return;
+        }
       }
       
       // Render a loading state while attempting to lock the table atomically
