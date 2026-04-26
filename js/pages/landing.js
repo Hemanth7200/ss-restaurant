@@ -58,27 +58,29 @@ function renderLanding() {
 
   app.innerHTML = `
     <div class="landing-page">
-      <div class="landing-hero">
-        <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" style="width: 100px; height: 100px; margin-bottom: var(--space-xl);" />
-        <h1 class="landing-title" style="color: var(--color-primary); font-size: 2.5rem; margin-bottom: var(--space-xs);">SS Restaurant</h1>
-        <p class="landing-subtitle" style="color: var(--text-muted); font-size: var(--font-size-base); font-weight: var(--font-weight-medium);">Welcome to a premium dining experience</p>
+      <div class="landing-hero" style="padding-top: var(--space-4xl);">
+        <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); padding: var(--space-xl); border-radius: 50%; display: inline-block; box-shadow: var(--shadow-md); margin-bottom: var(--space-xl);">
+          <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" style="width: 80px; height: 80px;" />
+        </div>
+        <h1 class="landing-title" style="color: var(--color-primary); font-family: var(--font-family-heading); font-size: 3rem; margin-bottom: 0;">SS Restaurant</h1>
+        <p class="landing-subtitle" style="color: var(--text-secondary); font-size: var(--font-size-md); font-weight: 500; opacity: 0.8;">Premium Botanical Dining</p>
         
-        <div class="landing-select-wrapper" style="max-width: 400px; margin: var(--space-2xl) auto 0;">
-          <label class="form-label" style="text-align: left; display: block; margin-bottom: var(--space-sm);">Choose your Table</label>
-          <select id="table-select" class="form-input" style="border-radius: var(--radius-lg); height: 54px; font-size: var(--font-size-base);">
-            <option value="">— Select a Table —</option>
+        <div class="landing-select-wrapper" style="max-width: 360px; margin: var(--space-4xl) auto 0;">
+          <label class="form-label" style="text-align: left; display: block; margin-bottom: var(--space-sm); font-weight: 600; color: var(--color-primary); font-size: var(--font-size-sm); letter-spacing: 0.05em; text-transform: uppercase;">Where are you seated?</label>
+          <select id="table-select" class="form-input" style="border-radius: var(--radius-lg); height: 58px; font-size: var(--font-size-base); background: white; box-shadow: var(--shadow-sm); border: 2px solid var(--border-color);">
+            <option value="">— Select your table —</option>
             ${availableTables.map(t => `
               <option value="${t.id}">Table ${t.number} (${t.capacity} seats)</option>
             `).join('')}
           </select>
+          
+          <button id="landing-cta" class="btn btn-primary landing-cta" style="width: 100%; margin-top: var(--space-lg); border-radius: var(--radius-full); padding: 18px; font-family: var(--font-family-heading); font-size: 1.125rem; letter-spacing: 0.02em;" disabled>
+            Continue to Menu
+          </button>
         </div>
-        
-        <button id="landing-cta" class="btn btn-primary landing-cta" style="max-width: 400px; width: 100%; margin-top: var(--space-lg); border-radius: var(--radius-full); padding: 18px;" disabled>
-          Continue
-        </button>
 
         ${availableTables.length === 0 ? `
-          <p style="color: var(--color-error); margin-top: var(--space-lg); font-size: var(--font-size-sm); font-weight: 600;">
+          <p style="color: var(--color-error); margin-top: var(--space-lg); font-size: var(--font-size-sm); font-weight: 600; background: var(--color-error-bg); padding: 10px 20px; border-radius: var(--radius-full); display: inline-block;">
             ⚠️ All tables are currently occupied.
           </p>
         ` : ''}
