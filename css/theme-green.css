@@ -194,11 +194,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .landing-logo-container {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(8px);
-  padding: var(--space-xl);
+  background: white;
+  padding: 16px;
   border-radius: 50%;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-md);
   margin-bottom: var(--space-xl);
 }
@@ -702,12 +703,20 @@ h1, h2, h3, h4, h5, h6 {
     padding: var(--space-md) var(--space-base) !important;
   }
   .landing-logo-container {
-    padding: 8px !important;
-    margin-bottom: var(--space-sm) !important;
+    padding: 12px !important;
+    margin-bottom: var(--space-md) !important;
+    background: white !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: var(--shadow-md) !important;
   }
   .landing-logo {
-    width: 44px !important;
-    height: 44px !important;
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 50%;
+    object-fit: contain;
   }
   .landing-title {
     font-size: 1.75rem !important;
