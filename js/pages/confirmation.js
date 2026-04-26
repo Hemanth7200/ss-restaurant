@@ -228,26 +228,20 @@ function renderPayment() {
   const app = document.getElementById('app');
   const session = Store.getCurrentSession();
   if (!session) { Router.navigate('/'); return; }
-
-  // If already paid, go to review
-  if (session.paymentStatus === 'confirmed') {
-    Router.navigate('/review');
-    return;
-  }
+  if (session.paymentStatus === 'confirmed') { Router.navigate('/review'); return; }
 
   Store.updateSession({ currentStep: 'payment' });
 
   const tableNum = Utils.getTableNumber(session.tableId);
   const totals = Store.getFullSessionTotal();
+  const customerInfo = session.customerInfo || { name: '', phone: '' };
 
-  // SVG icons
   const cashSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v0a2 2 0 0 0-2 2"/><path d="M18 6v0a2 2 0 0 1 2 2"/><path d="M6 18v0a2 2 0 0 1-2-2"/><path d="M18 18v0a2 2 0 0 0 2-2"/></svg>`;
   const upiSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/><path d="M9 8l3-2 3 2"/><path d="M9 12l3 2 3-2"/></svg>`;
   const onlineSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M7 15h.01"/><path d="M11 15h2"/></svg>`;
 
   app.innerHTML = `
     <div class="menu-page">
-      <!-- Desktop Sidebar -->
       <aside class="menu-sidebar">
         <div class="customer-header-left" style="margin-bottom: var(--space-xl);">
           <img src="assets/logo.png" alt="Logo" class="customer-header-logo" style="width: 48px; height: 48px;" />
@@ -256,29 +250,17 @@ function renderPayment() {
             <div class="customer-header-table">Table ${tableNum}</div>
           </div>
         </div>
-        
         <nav class="sidebar-nav">
-          <a href="#/menu" class="nav-item">
-            <span>🏠</span> Menu
-          </a>
-          <a href="#/cart" class="nav-item">
-            <span>🛒</span> Your Cart
-          </a>
-          <a href="#/info" class="nav-item">
-            <span>ℹ️</span> Table Info
-          </a>
-          <a href="#/call" class="nav-item">
-            <span>📞</span> Call Waiter
-          </a>
+          <a href="#/menu" class="nav-item"><span>🏠</span> Menu</a>
+          <a href="#/cart" class="nav-item"><span>🛒</span> Your Cart</a>
+          <a href="#/info" class="nav-item"><span>ℹ️</span> Table Info</a>
+          <a href="#/call" class="nav-item"><span>📞</span> Call Waiter</a>
         </nav>
-
         <div class="slogan-card">
           <div class="slogan-text">Good food<br>Good mood ♡</div>
           <img src="assets/leaf-decor.png" class="leaf-decor" alt="" onerror="this.style.display='none'" />
         </div>
       </aside>
-
-      <!-- Main Content -->
       <main class="menu-main">
         <header class="customer-header">
           <div class="customer-header-left">
@@ -289,62 +271,33 @@ function renderPayment() {
             </div>
           </div>
         </header>
-
         <div class="payment-page">
           <h2>Your Bill</h2>
-
           <div class="bill-summary" style="margin-top: 0; max-width: 500px;">
             <h4>Order Summary</h4>
             ${session.orders.map(orderId => {
-              const order = Store.get('orders').find(o => o.id === orderId);
+              const order = (Store.get('orders') || []).find(o => String(o.id) === String(orderId));
               if (!order) return '';
-              return order.items.map(item => `
+              return (order.items || []).map(item => `
                 <div class="bill-row">
-                  <span>${item.name} × ${item.quantity}</span>
+                  <span>${Utils.escapeHtml(item.name)} × ${item.quantity}</span>
                   <span>${Utils.formatPrice(item.price * item.quantity)}</span>
                 </div>
               `).join('');
             }).join('')}
             <div class="bill-row" style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px dashed var(--border-color);">
-              <span>Subtotal</span>
-              <span>${Utils.formatPrice(totals.subtotal)}</span>
+              <span>Subtotal</span><span>${Utils.formatPrice(totals.subtotal)}</span>
             </div>
-            <div class="bill-row">
-              <span>GST (5%)</span>
-              <span>${Utils.formatPrice(totals.gst)}</span>
-            </div>
-            <div class="bill-row total">
-              <span>Total Amount</span>
-              <span>${Utils.formatPrice(totals.total)}</span>
-            </div>
+            <div class="bill-row"><span>GST (5%)</span><span>${Utils.formatPrice(totals.gst)}</span></div>
+            <div class="bill-row total"><span>Total Amount</span><span>${Utils.formatPrice(totals.total)}</span></div>
           </div>
 
           <h3 style="margin-top: var(--space-2xl); margin-bottom: var(--space-md); font-size: var(--font-size-base);">Select Payment Method</h3>
-
           <div class="payment-options" style="max-width: 500px;">
-            <div class="payment-option" id="pay-cash" data-method="cash">
-              <div class="payment-option-icon">${cashSvg}</div>
-              <div class="payment-option-text">
-                <h4>Cash</h4>
-                <p>Pay at the reception counter</p>
-              </div>
-            </div>
-            <div class="payment-option" id="pay-upi" data-method="upi">
-              <div class="payment-option-icon">${upiSvg}</div>
-              <div class="payment-option-text">
-                <h4>UPI</h4>
-                <p>Pay via UPI (GPay, PhonePe, Paytm)</p>
-              </div>
-            </div>
-            <div class="payment-option" id="pay-online" data-method="online">
-              <div class="payment-option-icon">${onlineSvg}</div>
-              <div class="payment-option-text">
-                <h4>Online</h4>
-                <p>Cards, Netbanking, Wallets</p>
-              </div>
-            </div>
+            <div class="payment-option" data-method="cash"><div class="payment-option-icon">${cashSvg}</div><div class="payment-option-text"><h4>Cash</h4><p>Pay at the reception counter</p></div></div>
+            <div class="payment-option" data-method="upi"><div class="payment-option-icon">${upiSvg}</div><div class="payment-option-text"><h4>UPI</h4><p>Pay via UPI app</p></div></div>
+            <div class="payment-option" data-method="online"><div class="payment-option-icon">${onlineSvg}</div><div class="payment-option-text"><h4>Online</h4><p>Cards, Netbanking, Wallets</p></div></div>
           </div>
-
           <div id="payment-action-area" style="max-width: 500px; width: 100%;"></div>
         </div>
       </main>
@@ -352,361 +305,102 @@ function renderPayment() {
   `;
 
   document.getElementById('payment-back').addEventListener('click', () => Router.navigate('/confirmation'));
-
-  // Payment polling — checks for admin confirm/reject every 3 seconds from the DB
   let paymentPollInterval = null;
 
   function startPaymentPolling() {
     if (paymentPollInterval) clearInterval(paymentPollInterval);
     paymentPollInterval = setInterval(async () => {
-      const s = Store.getCurrentSession();
-      if (!s) return;
-      
+      const current = Store.getCurrentSession();
+      if (!current) return;
       if (DB_ENABLED) {
-        const dbSession = await DB.getSession(s.id);
-        if (dbSession && dbSession.status === 'paid') {
-          Store.updateSession({ paymentStatus: 'confirmed', paid: true });
-        } else if (dbSession && dbSession.status === 'failed') {
-           // Wait, DB schema only supports 'active', 'paid', 'closed' for session status.
-           // For failed payments, the admin might just revert payment_method to null in DB.
-           if (!dbSession.paymentMethod) {
-             Store.updateSession({ paymentStatus: 'failed', paid: false });
-           }
-        }
+        const dbSession = await DB.getSession(current.id);
+        if (dbSession && dbSession.status === 'paid') Store.updateSession({ paymentStatus: 'confirmed', paid: true });
       }
-
-      const updatedS = Store.getCurrentSession();
-      if (updatedS.paymentStatus === 'confirmed') {
-        clearInterval(paymentPollInterval);
-        showPaymentResult('success');
-      } else if (updatedS.paymentStatus === 'failed') {
-        clearInterval(paymentPollInterval);
-        showPaymentResult('failed');
-      }
+      const updated = Store.getCurrentSession();
+      if (!updated) return;
+      if (updated.paymentStatus === 'confirmed') { clearInterval(paymentPollInterval); showPaymentResult('success'); }
+      if (updated.paymentStatus === 'failed') { clearInterval(paymentPollInterval); showPaymentResult('failed'); }
     }, 3000);
   }
 
   function showPaymentResult(result) {
     const area = document.getElementById('payment-action-area');
     if (!area) return;
-
     if (result === 'success') {
-      area.innerHTML = `
-        <div class="payment-message">
-          <div style="margin-bottom: var(--space-lg);">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="16 8 10 16 7 13"/>
-            </svg>
-          </div>
-          <h3 style="color: #16a34a; margin-bottom: var(--space-sm);">Transaction Completed</h3>
-          <p style="font-weight: 700; font-size: var(--font-size-lg); margin-bottom: var(--space-xs);">
-            ${Utils.formatPrice(totals.total)}
-          </p>
-          <p style="color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-lg);">
-            Table ${tableNum} • Payment Verified
-          </p>
-          <p style="color: var(--text-muted); font-size: var(--font-size-xs);">
-            Redirecting to review page...
-          </p>
-        </div>
-      `;
-      setTimeout(() => {
-        Toast.success('Payment successful! Thank you.');
-        Router.navigate('/review');
-      }, 3000);
-    } else {
-      area.innerHTML = `
-        <div class="payment-message">
-          <div style="margin-bottom: var(--space-lg);">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-          </div>
-          <h3 style="color: #dc2626; margin-bottom: var(--space-sm);">Transaction Failed</h3>
-          <p style="font-weight: 700; font-size: var(--font-size-lg); margin-bottom: var(--space-xs);">
-            ${Utils.formatPrice(totals.total)}
-          </p>
-          <p style="color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-lg);">
-            Payment was not confirmed by the admin. Please try again or contact the counter.
-          </p>
-          <button class="btn btn-primary btn-full" id="retry-payment-btn">
-            Try Again
-          </button>
-        </div>
-      `;
-      document.getElementById('retry-payment-btn').addEventListener('click', () => {
-        Store.updateSession({ paymentMethod: null, paymentStatus: null, paid: false });
-        renderPayment();
-      });
-    }
-  }
-
-  // Payment option selection
-  document.querySelectorAll('.payment-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-
-      const method = opt.dataset.method;
-      const area = document.getElementById('payment-action-area');
-
-      // Save payment method to session
-      Store.updateSession({ paymentMethod: method, paymentStatus: 'pending' });
-      // Sync payment method to DB so admin can see it's pending
-      if (DB_ENABLED) {
-        DB.updateSession(session.id, { paymentMethod: method });
-      }
-
-      if (method === 'cash') {
-        area.innerHTML = `
-          <div class="payment-message">
-            <div class="payment-waiting-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="2"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </div>
-            <h3>Pay at Reception</h3>
-            <p style="color: var(--text-secondary); margin: var(--space-md) 0; line-height: 1.6;">
-              Please proceed to the reception counter and pay
-              <strong style="color: var(--text-primary); font-size: var(--font-size-lg);">${Utils.formatPrice(totals.total)}</strong>
-            </p>
-            <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-              Table ${tableNum} • Admin will verify payment
-            </p>
-            <div class="payment-waiting-status">
-              <div class="payment-spinner"></div>
-              <span>Waiting for admin to confirm payment...</span>
-            </div>
-          </div>
-        `;
-        startPaymentPolling();
-      } else if (method === 'upi') {
-        renderUPIPayment(area, totals, tableNum, session);
-      } else if (method === 'online') {
-        renderOnlinePayment(area, totals, tableNum, session, customerInfo);
-      }
-    });
-  });
-
-  function renderOnlinePayment(area, totals, tableNum, session, customerInfo) {
-    area.innerHTML = `
-      <div class="payment-message">
-        <div class="payment-waiting-icon">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="5" width="20" height="14" rx="2"/>
-            <line x1="2" y1="10" x2="22" y2="10"/>
-            <path d="M7 15h.01"/><path d="M11 15h2"/>
-          </svg>
-        </div>
-        <p style="font-weight: 700; font-size: 1.5rem; margin-bottom: var(--space-xs);">
-          ${Utils.formatPrice(totals.total)}
-        </p>
-        <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-          Secure Online Payment via Razorpay
-        </p>
-        <button class="btn btn-primary btn-full" id="rzp-pay-btn" style="padding: 16px; font-size: 16px;">
-          Pay Now with Razorpay
-        </button>
-        <div class="payment-waiting-status" id="online-status" style="display:none; margin-top: 20px;">
-          <div class="payment-spinner"></div>
-          <span>Waiting for payment confirmation...</span>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('rzp-pay-btn').addEventListener('click', () => {
-      payWithRazorpay(totals.total, session, customerInfo, tableNum);
-    });
-  }
-  }
-
-  function payWithRazorpay(amount, session, customerInfo, tableNum) {
-    if (!window.Razorpay) {
-      Toast.error('Payment gateway not loaded. Please refresh.');
+      area.innerHTML = `<div class="payment-message"><h3 style="color:#16a34a;margin-bottom:var(--space-sm);">Transaction Completed</h3><p style="font-weight:700;font-size:var(--font-size-lg);">${Utils.formatPrice(totals.total)}</p><p style="color:var(--text-muted);font-size:var(--font-size-sm);margin-bottom:var(--space-lg);">Table ${tableNum} • Payment Verified</p></div>`;
+      setTimeout(() => { Toast.success('Payment successful!'); Router.navigate('/review'); }, 1500);
       return;
     }
-
-    if (RAZORPAY_KEY_ID === 'rzp_test_YOUR_KEY_HERE') {
-      Toast.warning('Razorpay Key ID is not configured. Please add your key in js/supabase.js');
-      // For demo purposes, we'll let it "succeed" after a delay
-      const btn = document.getElementById('rzp-pay-btn');
-      btn.disabled = true;
-      btn.innerHTML = 'Connecting to Razorpay...';
-      setTimeout(() => {
-        Toast.info('Demo Mode: Simulating successful payment');
-        handlePaymentSuccess('pay_demo_success');
-      }, 2000);
-      return;
-    }
-
-    const options = {
-      "key": RAZORPAY_KEY_ID,
-      "amount": Math.round(amount * 100), // Amount is in paise
-      "currency": "INR",
-      "name": "SS Restaurant",
-      "description": `Order for Table ${tableNum}`,
-      "image": "assets/logo.png",
-      "handler": function (response) {
-        // Payment successful
-        console.log('Razorpay Success:', response);
-        handlePaymentSuccess(response.razorpay_payment_id);
-      },
-      "prefill": {
-        "name": customerInfo.name || "",
-        "contact": customerInfo.phone || ""
-      },
-      "theme": {
-        "color": "#C76A1C"
-      },
-      "modal": {
-        "ondismiss": function() {
-          console.log('Payment modal closed');
-        }
-      }
-    };
-
-    const rzp1 = new Razorpay(options);
-    rzp1.on('payment.failed', function (response){
-        console.error('Razorpay Failed:', response.error);
-        Toast.error('Payment Failed: ' + response.error.description);
+    area.innerHTML = `<div class="payment-message"><h3 style="color:#dc2626;margin-bottom:var(--space-sm);">Transaction Failed</h3><button class="btn btn-primary btn-full" id="retry-payment-btn">Try Again</button></div>`;
+    document.getElementById('retry-payment-btn').addEventListener('click', () => {
+      Store.updateSession({ paymentMethod: null, paymentStatus: null, paid: false });
+      renderPayment();
     });
-    rzp1.open();
   }
 
-  async function handlePaymentSuccess(paymentId) {
-    // Show waiting status
-    const statusEl = document.getElementById('online-status');
-    const payBtn = document.getElementById('rzp-pay-btn');
-    if (statusEl) statusEl.style.display = 'flex';
-    if (payBtn) payBtn.style.display = 'none';
-
-    // Update session locally
-    Store.updateSession({ 
-      paymentStatus: 'confirmed', 
-      paid: true,
-      paymentId: paymentId
-    });
-
-    // Sync to DB
-    if (DB_ENABLED) {
-      await DB.updateSession(session.id, { 
-        status: 'paid', 
-        paymentMethod: 'online',
-        paymentId: paymentId
-      });
-    }
-
-    showPaymentResult('success');
-  }
-
-  // UPI rendering logic (moved into a separate condition)
-  function renderUPIPayment(area, totals, tableNum, session) {
-    const upiId = 'hemanthrajudayakumar@oksbi';
-    const payeeName = 'SS Restaurant';
-    const amount = totals.total.toFixed(2);
-    const txnNote = 'SS Restaurant Table ' + tableNum;
-    const upiLink = 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(payeeName) + '&am=' + amount + '&cu=INR&tn=' + encodeURIComponent(txnNote);
-
-    area.innerHTML = `
-      <div class="payment-message">
-        <div class="upi-qr-area" id="upi-content-area">
-          <div class="payment-waiting-icon">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="5" y="2" width="14" height="20" rx="2"/>
-              <line x1="12" y1="18" x2="12" y2="18.01"/>
-              <path d="M9 8l3-2 3 2"/>
-              <path d="M9 12l3 2 3-2"/>
-            </svg>
-          </div>
-
-          <p style="font-weight: 700; font-size: 1.5rem; margin-bottom: var(--space-xs);">
-            ${Utils.formatPrice(totals.total)}
-          </p>
-          <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-            Table ${tableNum} • Admin will verify payment
-          </p>
-
-          <a href="${upiLink}" class="btn btn-primary btn-full" id="upi-pay-btn" style="margin-bottom: var(--space-md); text-decoration: none; font-size: var(--font-size-base); padding: var(--space-md) var(--space-xl);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
-            Pay with UPI App
-          </a>
-
-          <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-md);">
-            UPI ID: <strong>${upiId}</strong>
-          </p>
-
-          <div class="payment-waiting-status" id="upi-status">
-            <div class="payment-spinner"></div>
-            <span>Waiting for admin to confirm payment...</span>
-          </div>
-        </div>
-      </div>
-    `;
+  function renderCashPayment(area) {
+    area.innerHTML = `<div class="payment-message"><h3>Pay at Reception</h3><p style="margin:var(--space-md) 0;">Please pay ${Utils.formatPrice(totals.total)} at the counter.</p><div class="payment-waiting-status"><div class="payment-spinner"></div><span>Waiting for admin confirmation...</span></div></div>`;
     startPaymentPolling();
   }
 
-  // Payment option selection
+  function renderUPIPayment(area) {
+    const upiId = 'hemanthrajudayakumar@oksbi';
+    const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('SS Restaurant')}&am=${totals.total.toFixed(2)}&cu=INR&tn=${encodeURIComponent('SS Restaurant Table ' + tableNum)}`;
+    area.innerHTML = `<div class="payment-message"><p style="font-weight:700;font-size:1.5rem;margin-bottom:var(--space-xs);">${Utils.formatPrice(totals.total)}</p><a href="${upiLink}" class="btn btn-primary btn-full" style="text-decoration:none;">Pay with UPI App</a><p style="color:var(--text-muted);font-size:var(--font-size-xs);margin-top:var(--space-md);">UPI ID: <strong>${upiId}</strong></p><div class="payment-waiting-status" id="upi-status"><div class="payment-spinner"></div><span>Waiting for admin confirmation...</span></div></div>`;
+    startPaymentPolling();
+  }
+
+  function renderOnlinePayment(area) {
+    area.innerHTML = `<div class="payment-message"><p style="font-weight:700;font-size:1.5rem;margin-bottom:var(--space-xs);">${Utils.formatPrice(totals.total)}</p><p style="color:var(--text-muted);font-size:var(--font-size-xs);margin-bottom:var(--space-lg);">Secure Online Payment via Razorpay</p><button class="btn btn-primary btn-full" id="rzp-pay-btn">Pay Now with Razorpay</button></div>`;
+    document.getElementById('rzp-pay-btn').addEventListener('click', () => payWithRazorpay(totals.total));
+  }
+
+  async function handlePaymentSuccess(paymentId, method) {
+    Store.updateSession({ paymentMethod: method, paymentStatus: 'confirmed', paid: true, paymentId });
+    if (DB_ENABLED) await DB.updateSession(session.id, { status: 'paid', paymentMethod: method });
+    showPaymentResult('success');
+  }
+
+  function payWithRazorpay(amount) {
+    if (!window.Razorpay) { Toast.error('Payment gateway not loaded. Please refresh.'); return; }
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount: Math.round(amount * 100),
+      currency: 'INR',
+      name: 'SS Restaurant',
+      description: `Order for Table ${tableNum}`,
+      image: 'assets/logo.png',
+      handler(response) { handlePaymentSuccess(response.razorpay_payment_id, 'online'); },
+      prefill: { name: customerInfo.name || '', contact: customerInfo.phone || '' },
+      theme: { color: '#C76A1C' }
+    };
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', (response) => {
+      const msg = response && response.error && response.error.description ? response.error.description : 'Please try again.';
+      Toast.error('Payment Failed: ' + msg);
+    });
+    rzp.open();
+  }
+
   document.querySelectorAll('.payment-option').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
-
       const method = opt.dataset.method;
       const area = document.getElementById('payment-action-area');
-
-      // Save payment method to session
       Store.updateSession({ paymentMethod: method, paymentStatus: 'pending' });
-      // Sync payment method to DB so admin can see it's pending
-      if (DB_ENABLED) {
-        DB.updateSession(session.id, { paymentMethod: method });
-      }
-
-      if (method === 'cash') {
-        area.innerHTML = `
-          <div class="payment-message">
-            <div class="payment-waiting-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="2"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </div>
-            <h3>Pay at Reception</h3>
-            <p style="color: var(--text-secondary); margin: var(--space-md) 0; line-height: 1.6;">
-              Please proceed to the reception counter and pay
-              <strong style="color: var(--text-primary); font-size: var(--font-size-lg);">${Utils.formatPrice(totals.total)}</strong>
-            </p>
-            <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-              Table ${tableNum} • Admin will verify payment
-            </p>
-            <div class="payment-waiting-status">
-              <div class="payment-spinner"></div>
-              <span>Waiting for admin to confirm payment...</span>
-            </div>
-          </div>
-        `;
-        startPaymentPolling();
-      } else if (method === 'upi') {
-        renderUPIPayment(area, totals, tableNum, session);
-      } else if (method === 'online') {
-        renderOnlinePayment(area, totals, tableNum, session, customerInfo);
-      }
+      if (DB_ENABLED) DB.updateSession(session.id, { paymentMethod: method });
+      if (method === 'cash') renderCashPayment(area);
+      if (method === 'upi') renderUPIPayment(area);
+      if (method === 'online') renderOnlinePayment(area);
     });
   });
 
-  // If payment method was already selected (page reload), restore it
   if (session.paymentMethod && session.paymentStatus === 'pending') {
     const savedOpt = document.querySelector(`[data-method="${session.paymentMethod}"]`);
     if (savedOpt) savedOpt.click();
   }
-
-  // If already failed, show fail state
-  if (session.paymentStatus === 'failed') {
-    showPaymentResult('failed');
-  }
+  if (session.paymentStatus === 'failed') showPaymentResult('failed');
 }
 
 

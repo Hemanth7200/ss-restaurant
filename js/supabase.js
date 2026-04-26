@@ -11,7 +11,7 @@
 // ✅ SUPABASE CREDENTIALS CONFIGURED
 const SUPABASE_URL = 'https://szjehotidiaoghtozlbd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6amVob3RpZGlhb2dodG96bGJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NTkyOTgsImV4cCI6MjA5MjUzNTI5OH0.ovpO2pUkfHkbz1o3-NVWgMX-nDlkqWTZLF5xpUHAhn8';
-const RAZORPAY_KEY_ID = 'rzp_test_YOUR_KEY_HERE'; // Replace with your Razorpay Test Key ID
+const RAZORPAY_KEY_ID = 'rzp_test_Si7aRc2SAFCqy2';
 
 // Initialize Supabase client
 let supabaseClient = null;
