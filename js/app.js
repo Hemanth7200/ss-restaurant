@@ -45,9 +45,4 @@
 
   // Initialize router
   Router.init();
-
-  // Show connection status
-  if (DB_ENABLED) {
-    Toast.success('Connected to database');
-  }
 })();
