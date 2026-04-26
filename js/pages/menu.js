@@ -51,11 +51,12 @@ function renderMenu() {
             </div>
           </div>
           <div class="customer-header-right">
-            <button class="cart-btn-pill" id="go-cart" title="View Cart">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              Cart
-              <span class="cart-count-pill" id="cart-count">${cartCount || ''}</span>
-            </button>
+            <div class="cart-icon-container" id="go-cart" title="View Cart">
+              <div class="cart-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <span class="cart-badge" id="cart-count">${cartCount || ''}</span>
+              </div>
+            </div>
           </div>
         </header>
 
