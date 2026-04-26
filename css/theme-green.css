@@ -518,6 +518,34 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
   }
 
+  .admin-layout {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .admin-main {
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--bg-main);
+  }
+
+  .admin-content {
+    padding: var(--space-xl);
+    max-width: 1600px;
+    margin: 0;
+  }
+
+  .menu-search {
+    padding: var(--space-xl) 0;
+    margin-bottom: var(--space-md);
+  }
+
+  .menu-categories {
+    padding: var(--space-md) 0;
+    margin-bottom: var(--space-lg);
+  }
+
   .menu-card {
     min-height: 126px;
   }

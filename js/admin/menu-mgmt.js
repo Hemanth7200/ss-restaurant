@@ -9,19 +9,24 @@ function renderAdminMenu() {
     let searchQuery = '';
 
     container.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);flex-wrap:wrap;gap:var(--space-md);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-xl);flex-wrap:wrap;gap:var(--space-md);">
         <div class="filter-tabs" style="margin-bottom:0;" id="menu-filters">
-          <button class="filter-tab active" data-cat="all">All</button>
+          <button class="filter-tab active" data-cat="all">All Items</button>
           ${categories.map(c => `
             <button class="filter-tab" data-cat="${c.id}">${c.name}</button>
           `).join('')}
         </div>
-        <button class="btn btn-primary" id="add-menu-item-btn">+ Add Item</button>
+        <button class="btn btn-primary" id="add-menu-item-btn" style="padding: 12px 24px;">+ Add New Dish</button>
       </div>
 
-      <div class="search-bar" style="max-width: 300px; margin-bottom: var(--space-xl);">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="form-input" id="menu-search" placeholder="Search menu items..." />
+      <div style="background: white; padding: var(--space-lg); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-bottom: var(--space-xl); display: flex; align-items: center; gap: var(--space-md);">
+        <div class="search-bar" style="max-width: 400px; margin: 0; flex: 1;">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-input" id="menu-search" placeholder="Search by name or description..." />
+        </div>
+        <div style="font-size: var(--font-size-sm); color: var(--text-muted);">
+          Showing <span id="item-count-badge" style="font-weight: 600; color: var(--color-primary);">0</span> items
+        </div>
       </div>
 
       <div class="data-table-wrapper" id="menu-table-container">
@@ -37,7 +42,9 @@ function renderAdminMenu() {
       }
 
       const tableContainer = document.getElementById('menu-table-container');
+      const countEl = document.getElementById('item-count-badge');
       if (!tableContainer) return;
+      if (countEl) countEl.textContent = items.length;
 
       tableContainer.innerHTML = `
         <table class="data-table">

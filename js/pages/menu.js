@@ -312,7 +312,6 @@ function updateMenuDOM(changedItemId) {
       } else {
         actionContainer.innerHTML = `<button class="btn-add" onclick="menuAddItem('${changedItemId}')">+</button>`;
       }
-      return;
     }
   }
 
