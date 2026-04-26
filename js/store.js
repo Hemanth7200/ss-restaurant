@@ -220,21 +220,30 @@ const Store = {
   },
 
   _trimOldData() {
-    // Keep only the last 50 orders
-    if (this._state.orders && this._state.orders.length > 50) {
-      this._state.orders = this._state.orders.slice(-50);
+    // Aggressive trimming to prevent QuotaExceededError
+    if (this._state.orders && this._state.orders.length > 30) {
+      this._state.orders = this._state.orders.slice(-30);
     }
-    // Keep only the last 20 sessions
-    if (this._state.sessions && this._state.sessions.length > 20) {
-      this._state.sessions = this._state.sessions.slice(-20);
+    if (this._state.sessions && this._state.sessions.length > 10) {
+      this._state.sessions = this._state.sessions.slice(-10);
     }
-    // Clear old reviews
-    if (this._state.reviews && this._state.reviews.length > 20) {
-      this._state.reviews = this._state.reviews.slice(-20);
+    if (this._state.reviews && this._state.reviews.length > 10) {
+      this._state.reviews = this._state.reviews.slice(-10);
     }
-    // Clear complaints
-    if (this._state.complaints && this._state.complaints.length > 20) {
-      this._state.complaints = this._state.complaints.slice(-20);
+    if (this._state.complaints && this._state.complaints.length > 10) {
+      this._state.complaints = this._state.complaints.slice(-10);
+    }
+    // Strip large image data from stored orders to save space
+    if (this._state.orders) {
+      this._state.orders.forEach(order => {
+        if (order.items) {
+          order.items.forEach(item => {
+            if (item.image && item.image.startsWith('data:')) {
+              item.image = ''; // Remove base64 blobs
+            }
+          });
+        }
+      });
     }
   },
 
@@ -367,9 +376,24 @@ const Store = {
   },
 
   async resumeSessionForTable(tableId) {
-    if (!DB_ENABLED) return null;
+    let dbSession = null;
 
-    const dbSession = await DB.getActiveSessionByTable(tableId);
+    // Try DB first
+    if (DB_ENABLED) {
+      try {
+        dbSession = await DB.getActiveSessionByTable(tableId);
+      } catch (e) {
+        console.warn('DB lookup failed, falling back to local:', e);
+      }
+    }
+
+    // Fallback: search local sessions array
+    if (!dbSession && this._state.sessions) {
+      dbSession = this._state.sessions.find(s =>
+        s.tableId === tableId && s.status !== 'paid' && s.status !== 'closed'
+      );
+    }
+
     if (!dbSession) return null;
 
     const sessionOrders = this._state.orders
