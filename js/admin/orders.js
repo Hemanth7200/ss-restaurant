@@ -185,6 +185,9 @@ function renderAdminOrders() {
                 <div class="order-card-footer">
                   <span class="order-total">${Utils.formatPrice(order.total)}</span>
                   <div class="order-actions">
+                    ${paymentMethod === 'cash' && !isPaid ? `
+                      <button class="btn btn-sm btn-success" onclick="adminConfirmCash('${order.sessionId}')">💰 Confirm Cash</button>
+                    ` : ''}
                     ${order.status === 'new' ? `
                       <button class="btn btn-sm btn-danger" onclick="adminUpdateOrder(${order.id}, 'cancelled')">Cancel</button>
                       <button class="btn btn-sm" style="background:var(--color-warning);color:#fff;" onclick="adminUpdateOrder(${order.id}, 'preparing')">Preparing</button>
@@ -227,5 +230,13 @@ function adminUpdateOrder(orderId, status) {
   // Update UI seamlessly
   if (window._updateOrdersGrid) {
     window._updateOrdersGrid();
+  }
+}
+
+function adminConfirmCash(sessionId) {
+  if (confirm('Confirm cash payment for this table? This will release the table.')) {
+    Store.confirmPayment(sessionId);
+    Toast.success('Payment confirmed & table released');
+    if (window._updateOrdersGrid) window._updateOrdersGrid();
   }
 }

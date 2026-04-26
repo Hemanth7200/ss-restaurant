@@ -59,7 +59,7 @@ const Router = {
     }
 
     // Customer flow guards
-    const customerPages = ['/menu', '/cart', '/details', '/confirmation', '/payment', '/review'];
+    const customerPages = ['/menu', '/cart', '/details', '/confirmation', '/payment', '/track', '/info', '/call', '/review'];
     if (customerPages.includes(basePath)) {
       const session = Store.getCurrentSession();
       if (!session && basePath !== '/review') {

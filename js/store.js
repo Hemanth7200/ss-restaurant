@@ -337,10 +337,16 @@ const Store = {
     }
 
     // Allow users to browse a table until first order is placed.
-    // Block only if table is already locked/occupied.
+    // If table is occupied, attempt to resume the active session for that table
     const localTable = this._state.tables.find(t => t.id === tableId);
-    if (localTable && localTable.status !== 'available') {
-      Toast.error('This table order has already been placed. Please choose another table.');
+    if (localTable && localTable.status === 'occupied') {
+      console.log('🔗 Table is occupied. Attempting to join existing session...');
+      return await this.resumeSessionForTable(tableId);
+    }
+    
+    // If blocked or some other status, then stop
+    if (localTable && localTable.status !== 'available' && localTable.status !== 'occupied') {
+      Toast.error('This table is currently unavailable. Please contact staff.');
       return null;
     }
 

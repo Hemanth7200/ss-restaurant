@@ -147,4 +147,62 @@
 .review-section { margin-bottom: var(--space-xl); }
 .review-section label { display: block; font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); }
 
+/* ---- Track Order ---- */
+.track-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-sm);
+}
+
+.track-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 88px;
+  gap: 6px;
+}
+
+.track-step span {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #fff;
+}
+
+.track-step p {
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.track-step.done span {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+
+.track-step.done p {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.track-step-line {
+  flex: 1;
+  min-width: 18px;
+  height: 2px;
+  background: var(--border-color);
+  margin-bottom: 20px;
+}
+
+.track-step-line.done {
+  background: var(--color-success);
 }

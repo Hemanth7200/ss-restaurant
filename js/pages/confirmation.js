@@ -165,6 +165,10 @@ function renderConfirmation() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
               Order More Items
             </button>
+            <button class="confirm-btn-outline" id="track-order-status">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Track Order Status
+            </button>
             <button class="confirm-btn-outline" id="go-to-payment">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
               View Bill & Pay
@@ -209,6 +213,7 @@ function renderConfirmation() {
   `;
 
   document.getElementById('back-to-menu').addEventListener('click', () => Router.navigate('/menu'));
+  document.getElementById('track-order-status').addEventListener('click', () => Router.navigate('/track'));
   document.getElementById('go-to-payment').addEventListener('click', () => {
     if (!sessionOrders.length) {
       Toast.error('No order found yet. Please place an order first.');

@@ -18,6 +18,9 @@
   Router.register('/details', renderDetails);
   Router.register('/confirmation', renderConfirmation);
   Router.register('/payment', renderPayment);
+  Router.register('/track', renderTrackOrder);
+  Router.register('/info', renderTableInfo);
+  Router.register('/call', renderCallWaiter);
   Router.register('/review', renderReview);
 
   // Admin routes
@@ -25,6 +28,7 @@
   Router.register('/admin/dashboard', renderAdminDashboard);
   Router.register('/admin/orders', renderAdminOrders);
   Router.register('/admin/payments', renderAdminPayments);
+  Router.register('/admin/sessions', renderAdminSessions);
   Router.register('/admin/menu', renderAdminMenu);
   Router.register('/admin/categories', renderAdminCategories);
   Router.register('/admin/tables', renderAdminTables);
