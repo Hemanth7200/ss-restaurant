@@ -439,7 +439,16 @@ function showItemDetails(itemId) {
 
   const session = Store.getCurrentSession();
   const cartItem = session.cart.find(c => c.itemId === itemId);
-  const qty = cartItem ? cartItem.quantity : 0;
+  const qty = cartItem ? cartItem.quantity : 1;
+
+  // Resolve category name
+  const categories = Store.get('categories') || [];
+  const cat = categories.find(c => c.id === item.category);
+  const categoryName = cat ? cat.name : '';
+
+  // Remove existing modal if present
+  const existing = document.getElementById('item-details-modal');
+  if (existing) existing.remove();
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -449,6 +458,12 @@ function showItemDetails(itemId) {
   const isUrl = itemImage && (itemImage.startsWith('http') || itemImage.startsWith('/') || itemImage.startsWith('assets') || itemImage.startsWith('data:image'));
   const gradient = Utils.getFoodGradient(item.image);
 
+  // Generate ingredients from description keywords
+  const desc = item.description || '';
+  const ingredientsList = desc.replace(/[.!]/g, '').split(/,\s*| with | and | in | on | stuffed | tossed | soaked | brushed /).map(s => s.trim()).filter(s => s.length > 2 && s.length < 40).join(', ');
+
+  const startQty = cartItem ? cartItem.quantity : 1;
+
   overlay.innerHTML = `
     <div class="item-modal-content">
       <button class="modal-close-btn" onclick="closeItemDetails()">✕</button>
@@ -456,7 +471,7 @@ function showItemDetails(itemId) {
       <div class="item-modal-left">
         <div class="item-modal-img-container">
           ${isUrl
-            ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" />`
+            ? `<img src="${itemImage}" alt="${Utils.escapeHtml(item.name)}" onerror="this.onerror=null; this.src='assets/logo.png'; this.style.objectFit='contain';" />`
             : `<div class="item-modal-placeholder" style="background:${gradient}">${itemImage || '🍽️'}</div>`
           }
         </div>
@@ -464,40 +479,38 @@ function showItemDetails(itemId) {
       
       <div class="item-modal-right">
         <div class="item-modal-header">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span class="veg-indicator ${item.isVeg ? '' : 'nonveg'}"></span>
+          <div class="item-modal-title-row">
             <h2 class="item-modal-name">${Utils.escapeHtml(item.name)}</h2>
+            <span class="item-modal-bestseller">⭐ Bestseller</span>
           </div>
-          <p class="item-modal-desc">${Utils.escapeHtml(item.description || 'No description available.')}</p>
+          <p class="item-modal-desc">${Utils.escapeHtml(desc || 'Delicious dish prepared with fresh ingredients.')}</p>
+          
+          <div class="item-modal-tags">
+            <span class="item-tag ${item.isVeg ? 'tag-veg' : 'tag-nonveg'}">
+              <span class="veg-indicator ${item.isVeg ? '' : 'nonveg'}"></span>
+              ${item.isVeg ? 'Veg' : 'Non-Veg'}
+            </span>
+            <span class="item-tag tag-spice">🌶️ ${item.isVeg ? 'Mild' : 'Medium Spicy'}</span>
+          </div>
         </div>
         
-        <div class="item-modal-info-section">
-          <h4>Details</h4>
-          <div class="item-info-grid">
-            <div class="info-item">
-              <span class="info-label">Type</span>
-              <span class="info-value">${item.isVeg ? 'Veg' : 'Non-Veg'}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Category</span>
-              <span class="info-value">${item.category_name || 'Main Course'}</span>
-            </div>
-          </div>
+        <div class="item-modal-ingredients">
+          <h4>Ingredients</h4>
+          <p>${ingredientsList || Utils.escapeHtml(desc)}</p>
         </div>
 
         <div class="item-modal-footer">
-          <div class="item-modal-price">${Utils.formatPrice(item.price)}</div>
-          <div class="item-modal-actions" id="modal-actions-${item.id}">
-            ${qty > 0 ? `
-              <div class="qty-stepper">
-                <button onclick="modalUpdateQty('${item.id}', ${qty - 1})">−</button>
-                <span class="qty-value">${qty}</span>
-                <button onclick="modalUpdateQty('${item.id}', ${qty + 1})">+</button>
-              </div>
-            ` : `
-              <button class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-full);" onclick="modalAddItem('${item.id}')">Add to Cart</button>
-            `}
+          <div class="item-modal-qty-row">
+            <div class="modal-qty-stepper" id="modal-qty-stepper-${item.id}">
+              <button class="modal-qty-btn" onclick="modalStepQty('${item.id}', -1)">−</button>
+              <span class="modal-qty-value" id="modal-qty-val-${item.id}">${startQty}</span>
+              <button class="modal-qty-btn" onclick="modalStepQty('${item.id}', 1)">+</button>
+            </div>
+            <span class="item-modal-price" id="modal-price-${item.id}">${Utils.formatPrice(item.price * startQty)}</span>
           </div>
+          <button class="modal-add-cart-btn" id="modal-add-btn-${item.id}" onclick="modalConfirmAdd('${item.id}')">
+            🛒 ${cartItem ? 'Update Cart' : 'Add to Cart'}
+          </button>
         </div>
       </div>
     </div>
@@ -509,6 +522,15 @@ function showItemDetails(itemId) {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeItemDetails();
   });
+
+  // Close on Escape key
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeItemDetails();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
 }
 
 function closeItemDetails() {
@@ -516,38 +538,49 @@ function closeItemDetails() {
   if (modal) modal.remove();
 }
 
-function modalAddItem(itemId) {
-  menuAddItem(itemId);
-  // Update modal actions
+function modalStepQty(itemId, delta) {
+  const valEl = document.getElementById(`modal-qty-val-${itemId}`);
+  const priceEl = document.getElementById(`modal-price-${itemId}`);
+  if (!valEl) return;
+  
+  let current = parseInt(valEl.textContent) || 1;
+  current = Math.max(1, current + delta);
+  valEl.textContent = current;
+
   const items = Store.get('menuItems') || [];
   const item = items.find(m => m.id === itemId);
-  const actionContainer = document.getElementById(`modal-actions-${itemId}`);
-  if (actionContainer) {
-    actionContainer.innerHTML = `
-      <div class="qty-stepper">
-        <button onclick="modalUpdateQty('${itemId}', 0)">−</button>
-        <span class="qty-value">1</span>
-        <button onclick="modalUpdateQty('${itemId}', 2)">+</button>
-      </div>
-    `;
+  if (item && priceEl) {
+    priceEl.textContent = Utils.formatPrice(item.price * current);
   }
 }
 
-function modalUpdateQty(itemId, qty) {
-  menuUpdateQty(itemId, qty);
-  // Update modal actions
-  const actionContainer = document.getElementById(`modal-actions-${itemId}`);
-  if (actionContainer) {
-    if (qty > 0) {
-      actionContainer.innerHTML = `
-        <div class="qty-stepper">
-          <button onclick="modalUpdateQty('${itemId}', ${qty - 1})">−</button>
-          <span class="qty-value">${qty}</span>
-          <button onclick="modalUpdateQty('${itemId}', ${qty + 1})">+</button>
-        </div>
-      `;
-    } else {
-      actionContainer.innerHTML = `<button class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-full);" onclick="modalAddItem('${itemId}')">Add to Cart</button>`;
+function modalConfirmAdd(itemId) {
+  const valEl = document.getElementById(`modal-qty-val-${itemId}`);
+  const qty = valEl ? parseInt(valEl.textContent) || 1 : 1;
+
+  const items = Store.get('menuItems') || [];
+  const item = items.find(m => m.id === itemId);
+  if (!item) return;
+
+  // Set quantity in cart
+  const session = Store.getCurrentSession();
+  const cartItem = session.cart.find(c => c.itemId === itemId);
+  
+  if (cartItem) {
+    Store.updateCartQty(itemId, qty);
+  } else {
+    // Add item then set quantity
+    Store.addToCart(item);
+    if (qty > 1) {
+      Store.updateCartQty(itemId, qty);
     }
+  }
+
+  updateMenuDOM(itemId);
+  closeItemDetails();
+  
+  // Show toast
+  if (window.showToast) {
+    showToast(`${item.name} × ${qty} added to cart!`, 'success');
   }
 }
