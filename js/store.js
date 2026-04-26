@@ -19,6 +19,11 @@ const Store = {
     // 1. Load shared browser state + tab-scoped session state.
     this._hydrateFromStorage();
 
+    // 1b. Proactive cleanup: remove legacy key and trim old data
+    try { localStorage.removeItem(STORE_KEY); } catch(e) {}
+    try { sessionStorage.removeItem(STORE_KEY); } catch(e) {}
+    this._trimOldData();
+
     // 2. Initialize Supabase
     initSupabase();
 
@@ -175,21 +180,61 @@ const Store = {
   },
 
   _persist() {
+    const sessionSerialized = JSON.stringify({
+      currentSession: this._state.currentSession || null,
+      adminAuth: this._state.adminAuth || null
+    });
+
+    // Always persist session state (small, rarely exceeds quota)
+    try {
+      sessionStorage.setItem(SESSION_STORE_KEY, sessionSerialized);
+    } catch (e) { /* sessionStorage full — non-critical */ }
+
+    // Persist shared state with quota-exceeded recovery
     try {
       const sharedSerialized = JSON.stringify(this._getSharedStateSnapshot());
-      const sessionSerialized = JSON.stringify({
-        currentSession: this._state.currentSession || null,
-        adminAuth: this._state.adminAuth || null
-      });
-
       localStorage.setItem(SHARED_STORE_KEY, sharedSerialized);
-      sessionStorage.setItem(SESSION_STORE_KEY, sessionSerialized);
-
-      // Backward compatibility keys for previous builds.
-      localStorage.setItem(STORE_KEY, sharedSerialized);
-      sessionStorage.setItem(STORE_KEY, sessionSerialized);
     } catch (e) {
-      console.warn('Failed to persist state:', e);
+      if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+        console.warn('⚠️ localStorage quota exceeded — trimming old data...');
+        this._trimOldData();
+        try {
+          // Remove legacy key to free space
+          localStorage.removeItem(STORE_KEY);
+          const sharedSerialized = JSON.stringify(this._getSharedStateSnapshot());
+          localStorage.setItem(SHARED_STORE_KEY, sharedSerialized);
+        } catch (e2) {
+          console.warn('⚠️ Still over quota after trim — clearing localStorage');
+          localStorage.clear();
+          try {
+            const sharedSerialized = JSON.stringify(this._getSharedStateSnapshot());
+            localStorage.setItem(SHARED_STORE_KEY, sharedSerialized);
+          } catch (e3) {
+            console.error('Cannot persist state at all:', e3);
+          }
+        }
+      } else {
+        console.warn('Failed to persist state:', e);
+      }
+    }
+  },
+
+  _trimOldData() {
+    // Keep only the last 50 orders
+    if (this._state.orders && this._state.orders.length > 50) {
+      this._state.orders = this._state.orders.slice(-50);
+    }
+    // Keep only the last 20 sessions
+    if (this._state.sessions && this._state.sessions.length > 20) {
+      this._state.sessions = this._state.sessions.slice(-20);
+    }
+    // Clear old reviews
+    if (this._state.reviews && this._state.reviews.length > 20) {
+      this._state.reviews = this._state.reviews.slice(-20);
+    }
+    // Clear complaints
+    if (this._state.complaints && this._state.complaints.length > 20) {
+      this._state.complaints = this._state.complaints.slice(-20);
     }
   },
 
