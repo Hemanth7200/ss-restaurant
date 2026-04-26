@@ -730,26 +730,29 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: var(--space-md) !important;
   }
   .landing-footer {
-    padding: var(--space-md) var(--space-base) !important;
-    margin-top: var(--space-md) !important;
+    padding: var(--space-lg) var(--space-base) !important;
+    margin-top: var(--space-2xl) !important; /* Increased from space-md to push it down */
     border-top: none !important;
+    width: 100%;
   }
   .landing-footer-inner {
-    gap: var(--space-md) !important;
+    gap: var(--space-xl) !important; /* Increased gap for better centering of the two columns */
     justify-content: center !important;
+    display: flex !important;
   }
   .landing-footer h4 {
-    margin-bottom: 2px !important;
-    font-size: 12px !important;
+    margin-bottom: 6px !important;
+    font-size: 13px !important;
     text-align: center;
   }
   .landing-footer a {
-    font-size: 10px !important;
+    font-size: 11px !important;
     text-align: center;
+    display: block; /* Ensure full-width centering */
   }
   .landing-page {
     justify-content: center !important;
-    gap: var(--space-md);
+    gap: 0; /* Remove gap if we use margin-top on footer for more control */
   }
 }
 
