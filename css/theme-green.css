@@ -931,6 +931,54 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 auto;
 }
 
+/* Diet Filters */
+.diet-filter-wrapper {
+  display: flex;
+  gap: 4px;
+  background: #f1f1f1;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color);
+}
+
+.diet-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.diet-chip.active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.diet-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px; /* Square with slight round like standard veg/non-veg symbols */
+}
+
+.diet-dot.veg {
+  background: #16a34a;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #16a34a;
+}
+
+.diet-dot.non-veg {
+  background: #dc2626;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #dc2626;
+}
+
 .search-box-wrapper {
   position: relative;
   flex: 1;
@@ -1103,7 +1151,24 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .search-filter-container {
+    flex-direction: column;
+    gap: 12px;
     padding: var(--space-md) var(--space-base);
+  }
+
+  .diet-filter-wrapper {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .diet-chip {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .filter-trigger-btn {
+    width: 100%;
+    justify-content: center;
   }
   .search-input {
     height: 44px;

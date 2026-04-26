@@ -65,14 +65,24 @@ function renderMenu() {
             <span class="search-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
-            <input type="text" id="menu-search" class="search-input" placeholder="Search menu items..." autocomplete="off" />
+            <input type="text" id="menu-search" class="search-input" placeholder="Search..." autocomplete="off" />
             <button id="clear-search" class="clear-search-btn">✕</button>
+          </div>
+
+          <div class="diet-filter-wrapper" id="diet-filters">
+            <button class="diet-chip active" data-diet="all">All</button>
+            <button class="diet-chip" data-diet="veg">
+              <span class="diet-dot veg"></span> Veg
+            </button>
+            <button class="diet-chip" data-diet="non-veg">
+              <span class="diet-dot non-veg"></span> Non-Veg
+            </button>
           </div>
           
           <div class="filter-btn-wrapper">
             <button id="filter-btn" class="filter-trigger-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-              <span>Filters</span>
+              <span>Sort</span>
             </button>
             <div id="filter-dropdown" class="filter-options-dropdown" style="display: none;">
               <div class="filter-option" data-sort="default">Default</div>
@@ -103,6 +113,7 @@ function renderMenu() {
   let activeCategory = 'all';
   let searchQuery = '';
   let activeSort = 'default';
+  let activeDiet = 'all';
 
   // ---- Helpers ----
   function buildMenuCardAction(itemId, qty) {
@@ -198,7 +209,14 @@ function renderMenu() {
       items = items.filter(m => m.category === activeCategory);
     }
 
-    // 2. Filter by Search
+    // 2. Filter by Diet (Veg/Non-Veg)
+    if (activeDiet === 'veg') {
+      items = items.filter(m => m.isVeg === true);
+    } else if (activeDiet === 'non-veg') {
+      items = items.filter(m => m.isVeg === false);
+    }
+
+    // 3. Filter by Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase().trim();
       
@@ -298,7 +316,17 @@ function renderMenu() {
     }).join('');
   }
 
-  // ---- Initial render ----
+  // Diet filter chips
+  document.querySelectorAll('.diet-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.diet-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeDiet = chip.dataset.diet;
+      renderMenuItems();
+    });
+  });
+
+  // Initial render
   renderMenuItems();
 
   // ---- Store subscription: re-render when DB data arrives ----
