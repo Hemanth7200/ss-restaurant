@@ -344,7 +344,7 @@ function renderPayment() {
 
 
   function renderOnlinePayment(area) {
-    area.innerHTML = `<div class="payment-message"><p style="font-weight:700;font-size:1.5rem;margin-bottom:var(--space-xs);">${Utils.formatPrice(totals.total)}</p><p style="color:var(--text-muted);font-size:var(--font-size-xs);margin-bottom:var(--space-lg);">Secure Online Payment via Razorpay</p><button class="btn btn-primary btn-full" id="rzp-pay-btn">Pay Now with Razorpay</button></div>`;
+    area.innerHTML = `<div class="payment-message"><p style="font-weight:700;font-size:1.5rem;margin-bottom:var(--space-xs);">${Utils.formatPrice(totals.total)}</p><p style="color:var(--text-muted);font-size:var(--font-size-xs);margin-bottom:var(--space-lg);">Secure Online Payment via Razorpay</p><button class="btn btn-primary btn-full" id="rzp-pay-btn">Pay Now</button></div>`;
     document.getElementById('rzp-pay-btn').addEventListener('click', () => payWithRazorpay(totals.total));
   }
 
