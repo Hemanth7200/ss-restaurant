@@ -9,8 +9,7 @@ function renderMenu() {
 
   Store.updateSession({ currentStep: 'menu' });
 
-  const categories = Store.get('categories').filter(c => c.active).sort((a, b) => a.order - b.order);
-  const menuItems = Store.get('menuItems').filter(m => m.active);
+  const categories = (Store.get('categories') || []).filter(c => c.active).sort((a, b) => a.order - b.order);
   const tableNum = Utils.getTableNumber(session.tableId);
   const cartCount = session.cart.length;
 
@@ -61,15 +60,15 @@ function renderMenu() {
         </header>
 
         <div class="menu-search-container" style="padding: var(--space-md) var(--space-base); max-width: 800px; margin: 0 auto;">
-          <div class="search-bar-wrapper" style="position: relative; margin-bottom: var(--space-md);">
-            <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." style="border-radius: var(--radius-lg); padding-right: 45px; height: 50px; font-size: 16px; border: 2px solid var(--border-color); background: white;" />
-            <button id="clear-search" class="search-clear-btn hidden" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #eee; border: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #666; font-size: 14px; font-weight: bold; transition: all 0.2s;">✕</button>
+          <div style="position: relative; margin-bottom: var(--space-md);">
+            <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." style="border-radius: var(--radius-lg); padding-left: 16px; padding-right: 45px; height: 48px; font-size: 15px; border: 1.5px solid var(--border-color); background: white;" />
+            <button id="clear-search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); border: none; width: 24px; height: 24px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; color: #555; font-size: 12px; font-weight: bold; transition: all 0.2s; line-height: 1;">✕</button>
           </div>
           
-          <div class="menu-filters-premium" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div class="filter-label" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Sort By:</div>
-            <select id="sort-select" class="form-input" style="width: auto; height: 38px; padding: 0 32px 0 12px; font-size: 13px; font-weight: 600; border-radius: 10px; border: 1.5px solid var(--border-color); cursor: pointer; background-position: right 8px center;">
-              <option value="default">Default (Recommended)</option>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Sort:</span>
+            <select id="sort-select" class="form-input" style="flex: 1; height: 36px; padding: 0 30px 0 10px; font-size: 13px; font-weight: 500; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); cursor: pointer;">
+              <option value="default">Default</option>
               <option value="a-z">A to Z</option>
               <option value="z-a">Z to A</option>
               <option value="price-low">Price: Low to High</option>
@@ -79,27 +78,26 @@ function renderMenu() {
         </div>
 
         <div class="menu-categories" id="category-chips">
-          <button class="chip active" data-cat="all">All Categories</button>
+          <button class="chip active" data-cat="all">All</button>
           ${categories.map(c => `
             <button class="chip" data-cat="${c.id}">${c.name}</button>
           `).join('')}
         </div>
 
-        <div class="menu-grid" id="menu-grid">
-          <!-- Items will be injected here -->
-        </div>
+        <div class="menu-grid" id="menu-grid"></div>
       </main>
 
       <!-- Desktop Cart Preview -->
-      <aside class="menu-cart-preview" id="desktop-cart-preview">
-        <!-- Rendered by JS -->
-      </aside>
+      <aside class="menu-cart-preview" id="desktop-cart-preview"></aside>
     </div>
   `;
 
+  // ---- State ----
   let activeCategory = 'all';
   let searchQuery = '';
+  let activeSort = 'default';
 
+  // ---- Helpers ----
   function buildMenuCardAction(itemId, qty) {
     if (qty > 0) {
       return `
@@ -175,13 +173,15 @@ function renderMenu() {
     `;
   }
 
+  // ---- Main render function ----
   function renderMenuItems() {
     const grid = document.getElementById('menu-grid');
     const clearBtn = document.getElementById('clear-search');
     if (!grid) return;
 
-    // Get fresh items from store (in case they just loaded)
-    const currentMenuItems = Store.get('menuItems').filter(m => m.active);
+    // Always get fresh items from Store
+    const allItems = Store.get('menuItems') || [];
+    const currentMenuItems = allItems.filter(m => m.active);
     let items = [...currentMenuItems];
 
     // 1. Filter by Category
@@ -189,58 +189,58 @@ function renderMenu() {
       items = items.filter(m => m.category === activeCategory);
     }
 
-    // 2. Filter by Search
+    // 2. Filter by Search — always use .includes() for all lengths
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (q.length === 1) {
-        items = items.filter(m => m.name.toLowerCase().startsWith(q));
-      } else if (q.length < 3) {
-        items = items.filter(m => m.name.toLowerCase().includes(q));
-      } else {
-        items = items.filter(m =>
-          m.name.toLowerCase().includes(q) ||
-          m.description.toLowerCase().includes(q)
-        );
-      }
-      if (clearBtn) clearBtn.classList.remove('hidden');
+      const q = searchQuery.toLowerCase().trim();
+      items = items.filter(m =>
+        m.name.toLowerCase().includes(q) ||
+        (m.description && m.description.toLowerCase().includes(q))
+      );
+      // Show clear button
+      if (clearBtn) clearBtn.style.display = 'flex';
     } else {
-      if (clearBtn) clearBtn.classList.add('hidden');
+      if (clearBtn) clearBtn.style.display = 'none';
     }
 
     // 3. Sort
-    if (activeSort === 'a-z') {
-      items.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (activeSort === 'z-a') {
-      items.sort((a, b) => b.name.localeCompare(a.name));
-    } else if (activeSort === 'price-low') {
-      items.sort((a, b) => a.price - b.price);
-    } else if (activeSort === 'price-high') {
-      items.sort((a, b) => b.price - a.price);
+    switch (activeSort) {
+      case 'a-z':
+        items.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'z-a':
+        items.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'price-low':
+        items.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        items.sort((a, b) => b.price - a.price);
+        break;
     }
 
     const currentSession = Store.getCurrentSession();
     renderDesktopCart();
 
+    // Empty state
     if (items.length === 0) {
-      if (!Store._dbLoaded) {
-        // Show Skeleton Loader while waiting for DB
+      if (!Store._dbLoaded && currentMenuItems.length === 0) {
+        // Still loading from DB
         grid.innerHTML = Array(6).fill().map(() => `
-          <div class="menu-card skeleton" style="height: 140px; display: flex; flex-direction: row; gap: 10px; padding: 10px;">
-            <div class="skeleton" style="width: 100px; height: 100px; border-radius: 8px;"></div>
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 10px 0;">
-              <div class="skeleton" style="height: 20px; width: 70%; border-radius: 4px;"></div>
-              <div class="skeleton" style="height: 15px; width: 50%; border-radius: 4px;"></div>
-              <div class="skeleton" style="height: 20px; width: 30%; border-radius: 4px; margin-top: auto;"></div>
+          <div class="menu-card" style="height: 120px; opacity: 0.4;">
+            <div class="menu-card-img" style="background: var(--bg-input);"></div>
+            <div class="menu-card-info">
+              <div style="height: 16px; width: 60%; background: var(--bg-input); border-radius: 4px; margin-bottom: 8px;"></div>
+              <div style="height: 12px; width: 40%; background: var(--bg-input); border-radius: 4px;"></div>
             </div>
           </div>
         `).join('');
       } else {
         grid.innerHTML = `
           <div class="empty-state" style="grid-column: 1/-1;">
-            <div class="empty-state-icon">🍽️</div>
-            <h3>No results for "${Utils.escapeHtml(searchQuery || activeCategory)}"</h3>
-            <p>Try a different keyword or check your spelling.</p>
-            <button class="btn btn-secondary btn-sm" style="margin-top:16px;" onclick="resetMenuFilters()">Clear All Filters</button>
+            <div class="empty-state-icon">🔍</div>
+            <h3>No results${searchQuery ? ' for "' + Utils.escapeHtml(searchQuery) + '"' : ''}</h3>
+            <p>Try a different keyword or clear filters.</p>
+            <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="resetMenuFilters()">Clear Filters</button>
           </div>
         `;
       }
@@ -250,8 +250,6 @@ function renderMenu() {
     grid.innerHTML = items.map(item => {
       const cartItem = currentSession.cart.find(c => c.itemId === item.id);
       const qty = cartItem ? cartItem.quantity : 0;
-
-      // Use the actual item image stored in DB
       const itemImage = item.image;
       const isUrl = itemImage && (itemImage.startsWith('http') || itemImage.startsWith('/') || itemImage.startsWith('assets') || itemImage.startsWith('data:image'));
       const gradient = Utils.getFoodGradient(item.image);
@@ -280,17 +278,19 @@ function renderMenu() {
     }).join('');
   }
 
+  // ---- Initial render ----
   renderMenuItems();
 
-  // 1. Subscribe to Store updates
-  const unsubscribeMenu = Store.subscribe('menuItems', () => renderMenuItems());
-  const unsubscribeCategories = Store.subscribe('categories', () => {
-    // If categories load after initial render, we might need to refresh the category chips too
-    // but for now let's just focus on the items
-    renderMenuItems();
+  // ---- Store subscription: re-render when DB data arrives ----
+  Store.subscribe('menuItems', () => {
+    if (document.getElementById('menu-grid')) {
+      renderMenuItems();
+    }
   });
 
-  // 2. Category clicks
+  // ---- Event Listeners ----
+
+  // Category chips
   document.getElementById('category-chips').addEventListener('click', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
@@ -300,53 +300,51 @@ function renderMenu() {
     renderMenuItems();
   });
 
-  // 3. Sort Select
-  const sortSelect = document.getElementById('sort-select');
-  sortSelect.addEventListener('change', (e) => {
+  // Sort dropdown
+  document.getElementById('sort-select').addEventListener('change', (e) => {
     activeSort = e.target.value;
     renderMenuItems();
   });
 
-  // 4. Search Input
+  // Search input
   const searchInput = document.getElementById('menu-search');
-  searchInput.addEventListener('input',
-    Utils.debounce((e) => {
-      searchQuery = e.target.value.trim();
-      renderMenuItems();
-    }, 250)
-  );
+  searchInput.addEventListener('input', Utils.debounce((e) => {
+    searchQuery = e.target.value.trim();
+    renderMenuItems();
+  }, 200));
 
-  // 5. Clear Search
-  const clearSearchBtn = document.getElementById('clear-search');
-  clearSearchBtn.addEventListener('click', () => {
+  // Clear search
+  document.getElementById('clear-search').addEventListener('click', () => {
     searchInput.value = '';
     searchQuery = '';
     renderMenuItems();
     searchInput.focus();
   });
 
-  // 6. Global Reset Helper
+  // Reset all filters
   window.resetMenuFilters = () => {
     searchInput.value = '';
     searchQuery = '';
     activeCategory = 'all';
     activeSort = 'default';
-    sortSelect.value = 'default';
+    document.getElementById('sort-select').value = 'default';
     document.querySelectorAll('#category-chips .chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('#category-chips .chip[data-cat="all"]').classList.add('active');
+    const allChip = document.querySelector('#category-chips .chip[data-cat="all"]');
+    if (allChip) allChip.classList.add('active');
     renderMenuItems();
   };
 
   // Cart button
   document.getElementById('go-cart').addEventListener('click', () => Router.navigate('/cart'));
 
-  // Expose for smooth updates
+  // Expose for external updates
   window._menuRenderItems = renderMenuItems;
 }
 
-// Global functions for menu item buttons
+// ---- Global functions for menu item buttons ----
 function menuAddItem(itemId) {
-  const item = Store.get('menuItems').find(m => m.id === itemId);
+  const items = Store.get('menuItems') || [];
+  const item = items.find(m => m.id === itemId);
   if (item) {
     Store.addToCart(item);
     updateMenuDOM(itemId);
@@ -361,10 +359,10 @@ function menuUpdateQty(itemId, qty) {
 function updateMenuDOM(changedItemId) {
   const session = Store.getCurrentSession();
   if (!session) return;
+
   const cartCountEl = document.getElementById('cart-count');
   if (cartCountEl) {
-    const cartCount = session.cart.length;
-    cartCountEl.textContent = cartCount || '';
+    cartCountEl.textContent = session.cart.length || '';
   }
 
   if (changedItemId) {
