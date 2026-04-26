@@ -69,23 +69,21 @@ function renderMenu() {
             <button id="clear-search" class="clear-search-btn">✕</button>
           </div>
 
-          <div class="diet-filter-wrapper" id="diet-filters">
-            <button class="diet-chip active" data-diet="all">All</button>
-            <button class="diet-chip" data-diet="veg">
-              <span class="diet-dot veg"></span> Veg
-            </button>
-            <button class="diet-chip" data-diet="non-veg">
-              <span class="diet-dot non-veg"></span> Non-Veg
-            </button>
-          </div>
-          
           <div class="filter-btn-wrapper">
             <button id="filter-btn" class="filter-trigger-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-              <span>Sort</span>
+              <span>Filters</span>
             </button>
             <div id="filter-dropdown" class="filter-options-dropdown" style="display: none;">
-              <div class="filter-option" data-sort="default">Default</div>
+              <div class="filter-section-title">Dietary</div>
+              <div class="filter-option active" data-diet="all">Show All</div>
+              <div class="filter-option" data-diet="veg">Veg Only</div>
+              <div class="filter-option" data-diet="non-veg">Non-Veg Only</div>
+              
+              <div class="filter-divider"></div>
+              
+              <div class="filter-section-title">Sort By</div>
+              <div class="filter-option active" data-sort="default">Default</div>
               <div class="filter-option" data-sort="a-z">A to Z</div>
               <div class="filter-option" data-sort="z-a">Z to A</div>
               <div class="filter-option" data-sort="price-low">Price: Low to High</div>
@@ -316,15 +314,7 @@ function renderMenu() {
     }).join('');
   }
 
-  // Diet filter chips
-  document.querySelectorAll('.diet-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.diet-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeDiet = chip.dataset.diet;
-      renderMenuItems();
-    });
-  });
+
 
   // Initial render
   renderMenuItems();
@@ -365,8 +355,16 @@ function renderMenu() {
     filterDropdown.addEventListener('click', (e) => {
       const option = e.target.closest('.filter-option');
       if (option) {
-        activeSort = option.dataset.sort;
-        document.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+        if (option.dataset.sort) {
+          activeSort = option.dataset.sort;
+          // Clear active from other sort options
+          filterDropdown.querySelectorAll('.filter-option[data-sort]').forEach(o => o.classList.remove('active'));
+        } else if (option.dataset.diet) {
+          activeDiet = option.dataset.diet;
+          // Clear active from other diet options
+          filterDropdown.querySelectorAll('.filter-option[data-diet]').forEach(o => o.classList.remove('active'));
+        }
+        
         option.classList.add('active');
         renderMenuItems();
       }
