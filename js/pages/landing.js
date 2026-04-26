@@ -58,14 +58,14 @@ function renderLanding() {
 
   app.innerHTML = `
     <div class="landing-page">
-      <div class="landing-hero" style="padding-top: var(--space-4xl);">
-        <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); padding: var(--space-xl); border-radius: 50%; display: inline-block; box-shadow: var(--shadow-md); margin-bottom: var(--space-xl);">
+      <div class="landing-hero">
+        <div class="landing-logo-container">
           <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" style="width: 80px; height: 80px;" />
         </div>
-        <h1 class="landing-title" style="color: var(--color-primary); font-family: var(--font-family-heading); font-size: 3rem; margin-bottom: 0;">SS Restaurant</h1>
+        <h1 class="landing-title" style="color: var(--color-primary); font-family: var(--font-family-heading); font-size: 2.5rem; margin-bottom: 0;">SS Restaurant</h1>
         <p class="landing-subtitle" style="color: var(--text-secondary); font-size: var(--font-size-md); font-weight: 500; opacity: 0.8;">Premium Dining Experience</p>
         
-        <div class="landing-select-wrapper" style="max-width: 360px; margin: var(--space-4xl) auto 0;">
+        <div class="landing-select-wrapper">
           <label class="form-label" style="text-align: left; display: block; margin-bottom: var(--space-sm); font-weight: 600; color: var(--color-primary); font-size: var(--font-size-sm); letter-spacing: 0.05em; text-transform: uppercase;">Where are you seated?</label>
           <select id="table-select" class="form-input" style="border-radius: var(--radius-lg); height: 58px; font-size: var(--font-size-base); background: white; box-shadow: var(--shadow-sm); border: 2px solid var(--border-color);">
             <option value="">— Select your table —</option>
