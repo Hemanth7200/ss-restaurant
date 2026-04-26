@@ -405,13 +405,16 @@ const Store = {
     return this._state.currentSession;
   },
 
-  async updateSession(updates) {
+  updateSession(updates) {
     const session = this._state.currentSession;
     if (!session) return;
     Object.assign(session, updates);
     this.set('currentSession', session);
+    // Fire-and-forget DB sync — never block the UI
     if (DB_ENABLED) {
-      await DB.updateSession(session.id, updates);
+      DB.updateSession(session.id, updates).catch(e => 
+        console.warn('DB session sync failed (non-blocking):', e)
+      );
     }
   },
 
@@ -489,24 +492,43 @@ const Store = {
     const session = this._state.currentSession;
     if (!session || session.cart.length === 0) return { success: false, error: 'Session not found or cart is empty' };
 
+    // Helper: wrap any promise with a timeout
+    const withTimeout = (promise, ms = 8000) => {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms))
+      ]);
+    };
+
     // First successful order claims the table atomically.
     if (!session.tableLocked) {
       const localTable = this._state.tables.find(t => t.id === session.tableId);
-      if (!DB_ENABLED && localTable && localTable.status !== 'available') {
-        this._enforceTableLockForCurrentSession();
-        return { success: false, error: 'This table order has already been placed. Please choose another table.' };
+      
+      if (DB_ENABLED) {
+        try {
+          // Try to lock the table. If it's already occupied, check if it's our session
+          const lockAcquired = await withTimeout(DB.updateTableStatus(session.tableId, 'occupied', 'available'));
+          if (!lockAcquired) {
+            // Table might already be occupied by this session (re-order) - check
+            if (session.orders && session.orders.length > 0) {
+              // We already have orders, table is ours - proceed
+              console.log('Table already occupied by this session, proceeding...');
+            } else if (!localTable || localTable.status !== 'available') {
+              this._enforceTableLockForCurrentSession();
+              return { success: false, error: 'This table is currently in use. Please choose another table.' };
+            }
+          }
+        } catch (e) {
+          console.warn('Table lock timed out, proceeding with order anyway:', e.message);
+        }
+      } else {
+        if (localTable && localTable.status !== 'available' && (!session.orders || session.orders.length === 0)) {
+          this._enforceTableLockForCurrentSession();
+          return { success: false, error: 'This table order has already been placed. Please choose another table.' };
+        }
       }
 
-      const lockAcquired = DB_ENABLED
-        ? await DB.updateTableStatus(session.tableId, 'occupied', 'available')
-        : true;
-
-      if (!lockAcquired) {
-        this._enforceTableLockForCurrentSession();
-        return { success: false, error: 'This table order has already been placed. Please choose another table.' };
-      }
-
-      await this.updateSession({ tableLocked: true });
+      this.updateSession({ tableLocked: true });
       this.update('tables', tables =>
         tables.map(t => t.id === session.tableId ? { ...t, status: 'occupied' } : t)
       );
@@ -518,45 +540,62 @@ const Store = {
     
     let orderId = this._state.nextOrderId;
     let finalOrder = null;
-    let orderResult = null;
 
-    // Try up to 5 times to avoid duplicate Order IDs if multiple devices order simultaneously
-    for (let attempt = 0; attempt < 5; attempt++) {
-      if (DB_ENABLED) {
-        const dbNextId = await DB.getNextOrderId();
+    // Get next order ID from DB if available
+    if (DB_ENABLED) {
+      try {
+        const dbNextId = await withTimeout(DB.getNextOrderId(), 5000);
         if (dbNextId) orderId = dbNextId;
+      } catch (e) {
+        console.warn('getNextOrderId timed out, using local ID:', orderId);
       }
+    }
 
-      const order = {
-        id: orderId,
-        sessionId: session.id,
-        tableId: session.tableId,
-        items: [...session.cart],
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
-        specialInstructions: specialInstructions || '',
-        subtotal: subtotal,
-        gst: gst,
-        total: total,
-        status: 'new',
-        createdAt: new Date().toISOString()
-      };
+    const order = {
+      id: orderId,
+      sessionId: session.id,
+      tableId: session.tableId,
+      items: [...session.cart],
+      customerName: customerInfo.name,
+      customerPhone: customerInfo.phone,
+      specialInstructions: specialInstructions || '',
+      subtotal: subtotal,
+      gst: gst,
+      total: total,
+      status: 'new',
+      createdAt: new Date().toISOString()
+    };
 
-      orderResult = await DB.createOrder(order);
-      
-      if (orderResult === true || (orderResult && orderResult.success)) {
-        finalOrder = order;
-        break;
-      } else {
-        // If it's a duplicate key error (code 23505), retry immediately with a fresh ID
-        if (orderResult && orderResult.code === '23505') {
-          console.warn('⚠️ ID collision, retrying...', orderId);
-          await new Promise(r => setTimeout(r, Math.random() * 200));
-          continue;
+    // Try to save to DB, but don't block on failure
+    if (DB_ENABLED) {
+      try {
+        const orderResult = await withTimeout(DB.createOrder(order), 8000);
+        if (orderResult === true || (orderResult && orderResult.success)) {
+          finalOrder = order;
+        } else if (orderResult && orderResult.code === '23505') {
+          // Duplicate ID - increment and try once more
+          order.id = orderId + 1;
+          try {
+            const retry = await withTimeout(DB.createOrder(order), 5000);
+            if (retry === true || (retry && retry.success)) {
+              finalOrder = order;
+            }
+          } catch (e2) {
+            console.warn('DB retry failed, saving locally');
+            finalOrder = order;
+          }
+        } else {
+          // DB error but we still want to place the order locally
+          console.warn('DB createOrder failed, saving locally:', orderResult);
+          finalOrder = order;
         }
-        // For other errors, stop and report
-        break;
+      } catch (e) {
+        // Timeout or network error - save locally anyway
+        console.warn('DB createOrder timed out, saving locally:', e.message);
+        finalOrder = order;
       }
+    } else {
+      finalOrder = order;
     }
 
     if (finalOrder) {
@@ -565,7 +604,7 @@ const Store = {
       this.update('nextOrderId', id => Math.max(id, finalOrder.id + 1));
       
       // Update session and clear cart
-      await this.updateSession({ 
+      this.updateSession({ 
         cart: [], 
         orders: [...session.orders, finalOrder.id],
         customerInfo: customerInfo 
@@ -574,8 +613,7 @@ const Store = {
       return { success: true, order: finalOrder };
     }
 
-    const errorMsg = orderResult && orderResult.error ? orderResult.error : 'Failed to place order. Please check your connection or contact staff.';
-    return { success: false, error: errorMsg };
+    return { success: false, error: 'Failed to place order. Please try again.' };
   },
 
   // ---- Payment Helpers ----
