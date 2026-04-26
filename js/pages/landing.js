@@ -52,7 +52,7 @@ function renderLanding() {
 
   app.innerHTML = `
     <div class="landing-page">
-      <div class="landing-hero" style="background: white; border-bottom: 1px solid var(--border-color);">
+      <div class="landing-hero">
         <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" style="width: 100px; height: 100px; margin-bottom: var(--space-xl);" />
         <h1 class="landing-title" style="color: var(--color-primary); font-size: 2.5rem; margin-bottom: var(--space-xs);">SS Restaurant</h1>
         <p class="landing-subtitle" style="color: var(--text-muted); font-size: var(--font-size-base); font-weight: var(--font-weight-medium);">Welcome to a premium dining experience</p>
@@ -78,7 +78,7 @@ function renderLanding() {
         ` : ''}
       </div>
 
-      <div class="landing-footer" style="padding: var(--space-3xl) var(--space-xl); background: var(--bg-main);">
+      <div class="landing-footer">
         <div class="landing-footer-inner">
           <div class="landing-contact">
             <h4 style="margin-bottom: var(--space-md);">Contact Us</h4>
