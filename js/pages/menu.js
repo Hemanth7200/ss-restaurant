@@ -66,14 +66,15 @@ function renderMenu() {
             <button id="clear-search" class="search-clear-btn hidden" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #eee; border: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #666; font-size: 14px; font-weight: bold; transition: all 0.2s;">✕</button>
           </div>
           
-          <div class="menu-filters-premium">
-            <div class="sort-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;">
-              <button class="sort-chip active" data-sort="default">All</button>
-              <button class="sort-chip" data-sort="a-z">A to Z</button>
-              <button class="sort-chip" data-sort="z-a">Z to A</button>
-              <button class="sort-chip" data-sort="price-low">Price: Low to High</button>
-              <button class="sort-chip" data-sort="price-high">Price: High to Low</button>
-            </div>
+          <div class="menu-filters-premium" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div class="filter-label" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Sort By:</div>
+            <select id="sort-select" class="form-input" style="width: auto; height: 38px; padding: 0 32px 0 12px; font-size: 13px; font-weight: 600; border-radius: 10px; border: 1.5px solid var(--border-color); cursor: pointer; background-position: right 8px center;">
+              <option value="default">Default (Recommended)</option>
+              <option value="a-z">A to Z</option>
+              <option value="z-a">Z to A</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+            </select>
           </div>
         </div>
 
@@ -85,7 +86,7 @@ function renderMenu() {
         </div>
 
         <div class="menu-grid" id="menu-grid">
-          <!-- Rendered by JS -->
+          <!-- Items will be injected here -->
         </div>
       </main>
 
@@ -177,7 +178,11 @@ function renderMenu() {
   function renderMenuItems() {
     const grid = document.getElementById('menu-grid');
     const clearBtn = document.getElementById('clear-search');
-    let items = [...menuItems]; // Copy to avoid mutating store
+    if (!grid) return;
+
+    // Get fresh items from store (in case they just loaded)
+    const currentMenuItems = Store.get('menuItems').filter(m => m.active);
+    let items = [...currentMenuItems];
 
     // 1. Filter by Category
     if (activeCategory !== 'all') {
@@ -187,7 +192,6 @@ function renderMenu() {
     // 2. Filter by Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      // If q is very short (1 char), use startsWith for name to reduce noise
       if (q.length === 1) {
         items = items.filter(m => m.name.toLowerCase().startsWith(q));
       } else if (q.length < 3) {
@@ -234,8 +238,9 @@ function renderMenu() {
         grid.innerHTML = `
           <div class="empty-state" style="grid-column: 1/-1;">
             <div class="empty-state-icon">🍽️</div>
-            <h3>No dishes found</h3>
-            <p>Try a different search, category or filter</p>
+            <h3>No results for "${Utils.escapeHtml(searchQuery || activeCategory)}"</h3>
+            <p>Try a different keyword or check your spelling.</p>
+            <button class="btn btn-secondary btn-sm" style="margin-top:16px;" onclick="resetMenuFilters()">Clear All Filters</button>
           </div>
         `;
       }
@@ -277,7 +282,15 @@ function renderMenu() {
 
   renderMenuItems();
 
-  // Category chip clicks
+  // 1. Subscribe to Store updates
+  const unsubscribeMenu = Store.subscribe('menuItems', () => renderMenuItems());
+  const unsubscribeCategories = Store.subscribe('categories', () => {
+    // If categories load after initial render, we might need to refresh the category chips too
+    // but for now let's just focus on the items
+    renderMenuItems();
+  });
+
+  // 2. Category clicks
   document.getElementById('category-chips').addEventListener('click', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
@@ -287,17 +300,14 @@ function renderMenu() {
     renderMenuItems();
   });
 
-  // Sort chip clicks
-  document.querySelectorAll('.sort-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeSort = chip.dataset.sort;
-      renderMenuItems();
-    });
+  // 3. Sort Select
+  const sortSelect = document.getElementById('sort-select');
+  sortSelect.addEventListener('change', (e) => {
+    activeSort = e.target.value;
+    renderMenuItems();
   });
 
-  // Search Input
+  // 4. Search Input
   const searchInput = document.getElementById('menu-search');
   searchInput.addEventListener('input',
     Utils.debounce((e) => {
@@ -306,7 +316,7 @@ function renderMenu() {
     }, 250)
   );
 
-  // Clear Search
+  // 5. Clear Search
   const clearSearchBtn = document.getElementById('clear-search');
   clearSearchBtn.addEventListener('click', () => {
     searchInput.value = '';
@@ -315,10 +325,22 @@ function renderMenu() {
     searchInput.focus();
   });
 
+  // 6. Global Reset Helper
+  window.resetMenuFilters = () => {
+    searchInput.value = '';
+    searchQuery = '';
+    activeCategory = 'all';
+    activeSort = 'default';
+    sortSelect.value = 'default';
+    document.querySelectorAll('#category-chips .chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('#category-chips .chip[data-cat="all"]').classList.add('active');
+    renderMenuItems();
+  };
+
   // Cart button
   document.getElementById('go-cart').addEventListener('click', () => Router.navigate('/cart'));
 
-  // Expose render function for smooth updates
+  // Expose for smooth updates
   window._menuRenderItems = renderMenuItems;
 }
 
@@ -368,4 +390,3 @@ function updateMenuDOM(changedItemId) {
     window._menuRenderItems();
   }
 }
-
