@@ -16,8 +16,8 @@ function renderConfirmation() {
   const lastOrder = allOrders.find(o => String(o.id) === String(lastOrderId));
   const menuItems = Store.get('menuItems') || [];
   const orderIdDisplay = lastOrder
-    ? `#${String(lastOrder.id).replace(/^ord-/, '')}`
-    : '#---';
+    ? String(lastOrder.id).replace(/^ord-/, '')
+    : '---';
 
   // Calculate totals for the last order
   let subtotal = 0;
@@ -112,9 +112,7 @@ function renderConfirmation() {
           <div class="confirm-id-card">
             <span class="confirm-id-label">ORDER ID</span>
             <div class="confirm-id-number">
-              <span class="confirm-id-decor">🍽️</span>
               ${orderIdDisplay}
-              <span class="confirm-id-decor">🍽️</span>
             </div>
           </div>
 
