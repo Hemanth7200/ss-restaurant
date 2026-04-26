@@ -33,12 +33,6 @@ function renderMenu() {
           <a href="#/cart" class="nav-item">
             <span>🛒</span> Your Cart
           </a>
-          <a href="#/info" class="nav-item">
-            <span>ℹ️</span> Table Info
-          </a>
-          <a href="#/call" class="nav-item">
-            <span>📞</span> Call Waiter
-          </a>
         </nav>
 
         <div class="slogan-card">

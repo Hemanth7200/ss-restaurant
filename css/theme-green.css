@@ -432,14 +432,6 @@ h1, h2, h3, h4, h5, h6 {
   color: #7a5a16;
 }
 
-.chat-widget-btn {
-  background: linear-gradient(135deg, #18864f, #0f5535);
-}
-
-.chat-panel {
-  border-color: var(--border-color);
-}
-
 .admin-sidebar {
   border-right: 1px solid var(--border-color);
   box-shadow: 12px 0 32px rgba(15, 52, 35, 0.08);

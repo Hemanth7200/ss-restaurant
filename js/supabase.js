@@ -379,18 +379,6 @@ const DB = {
     if (error) console.error('DB saveReview:', error);
   },
 
-  // ---- Complaints ----
-  async saveComplaint(complaint) {
-    if (!DB_ENABLED) return;
-    const { error } = await supabaseClient.from('complaints').insert({
-      id: complaint.id,
-      table_id: complaint.tableId,
-      message: complaint.message,
-      created_at: complaint.createdAt
-    });
-    if (error) console.error('DB saveComplaint:', error);
-  },
-
   // ---- Realtime ----
   subscribeToOrders(callback) {
     if (!DB_ENABLED) return null;

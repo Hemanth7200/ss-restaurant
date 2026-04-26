@@ -147,29 +147,4 @@
 .review-section { margin-bottom: var(--space-xl); }
 .review-section label { display: block; font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); }
 
-/* ---- Chat Widget ---- */
-.chat-widget-btn {
-  position: fixed; bottom: var(--space-xl); right: var(--space-xl);
-  width: 56px; height: 56px; background: var(--color-primary); color: #fff;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 24px; box-shadow: 0 4px 16px var(--color-primary-glow);
-  z-index: var(--z-chat); transition: all var(--transition-fast); cursor: pointer;
-}
-.chat-widget-btn:hover { transform: scale(1.1); box-shadow: 0 6px 24px var(--color-primary-glow); }
-
-.chat-panel {
-  position: fixed; bottom: 90px; right: var(--space-xl);
-  width: 320px; max-height: 400px;
-  background: var(--bg-card); border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl); border: 1px solid var(--border-color);
-  z-index: var(--z-chat); display: flex; flex-direction: column; overflow: hidden;
-  animation: scaleIn 0.2s ease;
-}
-.chat-panel.hidden { display: none; }
-.chat-panel-header { padding: var(--space-base) var(--space-lg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-.chat-panel-header h4 { font-size: var(--font-size-base); }
-.chat-panel-body { padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-md); }
-
-@media (max-width: 480px) {
-  .chat-panel { right: var(--space-base); left: var(--space-base); width: auto; bottom: 80px; }
 }

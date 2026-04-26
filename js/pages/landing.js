@@ -99,21 +99,6 @@ function renderLanding() {
         </div>
       </div>
 
-      <!-- Chat Widget -->
-      <button class="chat-widget-btn" id="chat-widget-toggle" title="Complaints & Requests" style="background: var(--color-primary);">💬</button>
-      <div class="chat-panel hidden" id="chat-panel">
-        <div class="chat-panel-header" style="background: var(--color-primary);">
-          <h4 style="color: white;">Complaints & Requests</h4>
-          <button class="modal-close" id="chat-close" style="color: white;">✕</button>
-        </div>
-        <div class="chat-panel-body">
-          <div class="form-group">
-            <label class="form-label">Your Message</label>
-            <textarea id="chat-message" class="form-input" placeholder="Tell us how we can help..." rows="4"></textarea>
-          </div>
-          <button class="btn btn-primary btn-full" id="chat-send">Send Message</button>
-        </div>
-      </div>
     </div>
   `;
 
@@ -147,32 +132,6 @@ function renderLanding() {
     } else {
       ctaBtn.disabled = false;
       ctaBtn.textContent = originalText;
-    }
-  });
-
-  // Chat Widget
-  const chatToggle = document.getElementById('chat-widget-toggle');
-  const chatPanel = document.getElementById('chat-panel');
-  const chatClose = document.getElementById('chat-close');
-  const chatSend = document.getElementById('chat-send');
-
-  chatToggle.addEventListener('click', () => chatPanel.classList.toggle('hidden'));
-  chatClose.addEventListener('click', () => chatPanel.classList.add('hidden'));
-
-  chatSend.addEventListener('click', () => {
-    const msg = document.getElementById('chat-message').value.trim();
-    if (msg) {
-      const complaint = {
-        id: Utils.generateId('comp'),
-        message: msg,
-        createdAt: new Date().toISOString(),
-        tableId: null
-      };
-      Store.update('complaints', complaints => [...complaints, complaint]);
-      DB.saveComplaint(complaint);
-      document.getElementById('chat-message').value = '';
-      chatPanel.classList.add('hidden');
-      Toast.success('Your message has been sent. Thank you!');
     }
   });
 }
