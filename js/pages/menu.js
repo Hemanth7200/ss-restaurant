@@ -60,15 +60,25 @@ function renderMenu() {
           </div>
         </header>
 
-        <div class="menu-search">
-          <div class="search-bar" style="max-width: 500px; margin: 0 auto;">
-            <span class="search-icon">🔍</span>
-            <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." style="border-radius: var(--radius-full);" />
+        <div class="menu-search-container" style="padding: var(--space-md) var(--space-base); max-width: 800px; margin: 0 auto;">
+          <div class="search-bar-wrapper" style="position: relative; margin-bottom: var(--space-md);">
+            <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." style="border-radius: var(--radius-lg); padding-right: 45px; height: 50px; font-size: 16px; border: 2px solid var(--border-color); background: white;" />
+            <button id="clear-search" class="search-clear-btn hidden" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #eee; border: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #666; font-size: 14px; font-weight: bold; transition: all 0.2s;">✕</button>
+          </div>
+          
+          <div class="menu-filters-premium">
+            <div class="sort-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;">
+              <button class="sort-chip active" data-sort="default">All</button>
+              <button class="sort-chip" data-sort="a-z">A to Z</button>
+              <button class="sort-chip" data-sort="z-a">Z to A</button>
+              <button class="sort-chip" data-sort="price-low">Price: Low to High</button>
+              <button class="sort-chip" data-sort="price-high">Price: High to Low</button>
+            </div>
           </div>
         </div>
 
         <div class="menu-categories" id="category-chips">
-          <button class="chip active" data-cat="all">All</button>
+          <button class="chip active" data-cat="all">All Categories</button>
           ${categories.map(c => `
             <button class="chip" data-cat="${c.id}">${c.name}</button>
           `).join('')}
@@ -166,17 +176,42 @@ function renderMenu() {
 
   function renderMenuItems() {
     const grid = document.getElementById('menu-grid');
-    let items = menuItems;
+    const clearBtn = document.getElementById('clear-search');
+    let items = [...menuItems]; // Copy to avoid mutating store
 
+    // 1. Filter by Category
     if (activeCategory !== 'all') {
       items = items.filter(m => m.category === activeCategory);
     }
+
+    // 2. Filter by Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      items = items.filter(m =>
-        m.name.toLowerCase().includes(q) ||
-        m.description.toLowerCase().includes(q)
-      );
+      // If q is very short (1 char), use startsWith for name to reduce noise
+      if (q.length === 1) {
+        items = items.filter(m => m.name.toLowerCase().startsWith(q));
+      } else if (q.length < 3) {
+        items = items.filter(m => m.name.toLowerCase().includes(q));
+      } else {
+        items = items.filter(m =>
+          m.name.toLowerCase().includes(q) ||
+          m.description.toLowerCase().includes(q)
+        );
+      }
+      if (clearBtn) clearBtn.classList.remove('hidden');
+    } else {
+      if (clearBtn) clearBtn.classList.add('hidden');
+    }
+
+    // 3. Sort
+    if (activeSort === 'a-z') {
+      items.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (activeSort === 'z-a') {
+      items.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (activeSort === 'price-low') {
+      items.sort((a, b) => a.price - b.price);
+    } else if (activeSort === 'price-high') {
+      items.sort((a, b) => b.price - a.price);
     }
 
     const currentSession = Store.getCurrentSession();
@@ -200,7 +235,7 @@ function renderMenu() {
           <div class="empty-state" style="grid-column: 1/-1;">
             <div class="empty-state-icon">🍽️</div>
             <h3>No dishes found</h3>
-            <p>Try a different search or category</p>
+            <p>Try a different search, category or filter</p>
           </div>
         `;
       }
@@ -252,13 +287,33 @@ function renderMenu() {
     renderMenuItems();
   });
 
-  // Search
-  document.getElementById('menu-search').addEventListener('input',
+  // Sort chip clicks
+  document.querySelectorAll('.sort-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeSort = chip.dataset.sort;
+      renderMenuItems();
+    });
+  });
+
+  // Search Input
+  const searchInput = document.getElementById('menu-search');
+  searchInput.addEventListener('input',
     Utils.debounce((e) => {
       searchQuery = e.target.value.trim();
       renderMenuItems();
     }, 250)
   );
+
+  // Clear Search
+  const clearSearchBtn = document.getElementById('clear-search');
+  clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    searchQuery = '';
+    renderMenuItems();
+    searchInput.focus();
+  });
 
   // Cart button
   document.getElementById('go-cart').addEventListener('click', () => Router.navigate('/cart'));
