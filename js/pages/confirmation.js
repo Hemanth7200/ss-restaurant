@@ -243,6 +243,7 @@ function renderPayment() {
   // SVG icons
   const cashSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v0a2 2 0 0 0-2 2"/><path d="M18 6v0a2 2 0 0 1 2 2"/><path d="M6 18v0a2 2 0 0 1-2-2"/><path d="M18 18v0a2 2 0 0 0 2-2"/></svg>`;
   const upiSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/><path d="M9 8l3-2 3 2"/><path d="M9 12l3 2 3-2"/></svg>`;
+  const onlineSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M7 15h.01"/><path d="M11 15h2"/></svg>`;
 
   app.innerHTML = `
     <div class="menu-page">
@@ -333,6 +334,13 @@ function renderPayment() {
               <div class="payment-option-text">
                 <h4>UPI</h4>
                 <p>Pay via UPI (GPay, PhonePe, Paytm)</p>
+              </div>
+            </div>
+            <div class="payment-option" id="pay-online" data-method="online">
+              <div class="payment-option-icon">${onlineSvg}</div>
+              <div class="payment-option-text">
+                <h4>Online</h4>
+                <p>Cards, Netbanking, Wallets</p>
               </div>
             </div>
           </div>
@@ -476,51 +484,215 @@ function renderPayment() {
           </div>
         `;
         startPaymentPolling();
+      } else if (method === 'upi') {
+        renderUPIPayment(area, totals, tableNum, session);
+      } else if (method === 'online') {
+        renderOnlinePayment(area, totals, tableNum, session, customerInfo);
+      }
+    });
+  });
 
-      } else {
-        // UPI
-        const upiId = 'hemanthrajudayakumar@oksbi';
-        const payeeName = 'SS Restaurant';
-        const amount = totals.total.toFixed(2);
-        const txnNote = 'SS Restaurant Table ' + tableNum;
-        const upiLink = 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(payeeName) + '&am=' + amount + '&cu=INR&tn=' + encodeURIComponent(txnNote);
+  function renderOnlinePayment(area, totals, tableNum, session, customerInfo) {
+    area.innerHTML = `
+      <div class="payment-message">
+        <div class="payment-waiting-icon">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+            <path d="M7 15h.01"/><path d="M11 15h2"/>
+          </svg>
+        </div>
+        <p style="font-weight: 700; font-size: 1.5rem; margin-bottom: var(--space-xs);">
+          ${Utils.formatPrice(totals.total)}
+        </p>
+        <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
+          Secure Online Payment via Razorpay
+        </p>
+        <button class="btn btn-primary btn-full" id="rzp-pay-btn" style="padding: 16px; font-size: 16px;">
+          Pay Now with Razorpay
+        </button>
+        <div class="payment-waiting-status" id="online-status" style="display:none; margin-top: 20px;">
+          <div class="payment-spinner"></div>
+          <span>Waiting for payment confirmation...</span>
+        </div>
+      </div>
+    `;
 
+    document.getElementById('rzp-pay-btn').addEventListener('click', () => {
+      payWithRazorpay(totals.total, session, customerInfo, tableNum);
+    });
+  }
+  }
+
+  function payWithRazorpay(amount, session, customerInfo, tableNum) {
+    if (!window.Razorpay) {
+      Toast.error('Payment gateway not loaded. Please refresh.');
+      return;
+    }
+
+    if (RAZORPAY_KEY_ID === 'rzp_test_YOUR_KEY_HERE') {
+      Toast.warning('Razorpay Key ID is not configured. Please add your key in js/supabase.js');
+      // For demo purposes, we'll let it "succeed" after a delay
+      const btn = document.getElementById('rzp-pay-btn');
+      btn.disabled = true;
+      btn.innerHTML = 'Connecting to Razorpay...';
+      setTimeout(() => {
+        Toast.info('Demo Mode: Simulating successful payment');
+        handlePaymentSuccess('pay_demo_success');
+      }, 2000);
+      return;
+    }
+
+    const options = {
+      "key": RAZORPAY_KEY_ID,
+      "amount": Math.round(amount * 100), // Amount is in paise
+      "currency": "INR",
+      "name": "SS Restaurant",
+      "description": `Order for Table ${tableNum}`,
+      "image": "assets/logo.png",
+      "handler": function (response) {
+        // Payment successful
+        console.log('Razorpay Success:', response);
+        handlePaymentSuccess(response.razorpay_payment_id);
+      },
+      "prefill": {
+        "name": customerInfo.name || "",
+        "contact": customerInfo.phone || ""
+      },
+      "theme": {
+        "color": "#C76A1C"
+      },
+      "modal": {
+        "ondismiss": function() {
+          console.log('Payment modal closed');
+        }
+      }
+    };
+
+    const rzp1 = new Razorpay(options);
+    rzp1.on('payment.failed', function (response){
+        console.error('Razorpay Failed:', response.error);
+        Toast.error('Payment Failed: ' + response.error.description);
+    });
+    rzp1.open();
+  }
+
+  async function handlePaymentSuccess(paymentId) {
+    // Show waiting status
+    const statusEl = document.getElementById('online-status');
+    const payBtn = document.getElementById('rzp-pay-btn');
+    if (statusEl) statusEl.style.display = 'flex';
+    if (payBtn) payBtn.style.display = 'none';
+
+    // Update session locally
+    Store.updateSession({ 
+      paymentStatus: 'confirmed', 
+      paid: true,
+      paymentId: paymentId
+    });
+
+    // Sync to DB
+    if (DB_ENABLED) {
+      await DB.updateSession(session.id, { 
+        status: 'paid', 
+        paymentMethod: 'online',
+        paymentId: paymentId
+      });
+    }
+
+    showPaymentResult('success');
+  }
+
+  // UPI rendering logic (moved into a separate condition)
+  function renderUPIPayment(area, totals, tableNum, session) {
+    const upiId = 'hemanthrajudayakumar@oksbi';
+    const payeeName = 'SS Restaurant';
+    const amount = totals.total.toFixed(2);
+    const txnNote = 'SS Restaurant Table ' + tableNum;
+    const upiLink = 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(payeeName) + '&am=' + amount + '&cu=INR&tn=' + encodeURIComponent(txnNote);
+
+    area.innerHTML = `
+      <div class="payment-message">
+        <div class="upi-qr-area" id="upi-content-area">
+          <div class="payment-waiting-icon">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/>
+              <line x1="12" y1="18" x2="12" y2="18.01"/>
+              <path d="M9 8l3-2 3 2"/>
+              <path d="M9 12l3 2 3-2"/>
+            </svg>
+          </div>
+
+          <p style="font-weight: 700; font-size: 1.5rem; margin-bottom: var(--space-xs);">
+            ${Utils.formatPrice(totals.total)}
+          </p>
+          <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
+            Table ${tableNum} • Admin will verify payment
+          </p>
+
+          <a href="${upiLink}" class="btn btn-primary btn-full" id="upi-pay-btn" style="margin-bottom: var(--space-md); text-decoration: none; font-size: var(--font-size-base); padding: var(--space-md) var(--space-xl);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+            Pay with UPI App
+          </a>
+
+          <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-md);">
+            UPI ID: <strong>${upiId}</strong>
+          </p>
+
+          <div class="payment-waiting-status" id="upi-status">
+            <div class="payment-spinner"></div>
+            <span>Waiting for admin to confirm payment...</span>
+          </div>
+        </div>
+      </div>
+    `;
+    startPaymentPolling();
+  }
+
+  // Payment option selection
+  document.querySelectorAll('.payment-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+
+      const method = opt.dataset.method;
+      const area = document.getElementById('payment-action-area');
+
+      // Save payment method to session
+      Store.updateSession({ paymentMethod: method, paymentStatus: 'pending' });
+      // Sync payment method to DB so admin can see it's pending
+      if (DB_ENABLED) {
+        DB.updateSession(session.id, { paymentMethod: method });
+      }
+
+      if (method === 'cash') {
         area.innerHTML = `
           <div class="payment-message">
-            <div class="upi-qr-area" id="upi-content-area">
-              <div class="payment-waiting-icon">
-                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="5" y="2" width="14" height="20" rx="2"/>
-                  <line x1="12" y1="18" x2="12" y2="18.01"/>
-                  <path d="M9 8l3-2 3 2"/>
-                  <path d="M9 12l3 2 3-2"/>
-                </svg>
-              </div>
-
-              <p style="font-weight: 700; font-size: 1.5rem; margin-bottom: var(--space-xs);">
-                ${Utils.formatPrice(totals.total)}
-              </p>
-              <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
-                Table ${tableNum} • Admin will verify payment
-              </p>
-
-              <a href="${upiLink}" class="btn btn-primary btn-full" id="upi-pay-btn" style="margin-bottom: var(--space-md); text-decoration: none; font-size: var(--font-size-base); padding: var(--space-md) var(--space-xl);">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
-                Pay with UPI App
-              </a>
-
-              <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-md);">
-                UPI ID: <strong>${upiId}</strong>
-              </p>
-
-              <div class="payment-waiting-status" id="upi-status">
-                <div class="payment-spinner"></div>
-                <span>Waiting for admin to confirm payment...</span>
-              </div>
+            <div class="payment-waiting-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="6" width="20" height="12" rx="2"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <h3>Pay at Reception</h3>
+            <p style="color: var(--text-secondary); margin: var(--space-md) 0; line-height: 1.6;">
+              Please proceed to the reception counter and pay
+              <strong style="color: var(--text-primary); font-size: var(--font-size-lg);">${Utils.formatPrice(totals.total)}</strong>
+            </p>
+            <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-bottom: var(--space-lg);">
+              Table ${tableNum} • Admin will verify payment
+            </p>
+            <div class="payment-waiting-status">
+              <div class="payment-spinner"></div>
+              <span>Waiting for admin to confirm payment...</span>
             </div>
           </div>
         `;
         startPaymentPolling();
+      } else if (method === 'upi') {
+        renderUPIPayment(area, totals, tableNum, session);
+      } else if (method === 'online') {
+        renderOnlinePayment(area, totals, tableNum, session, customerInfo);
       }
     });
   });
