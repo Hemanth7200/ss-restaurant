@@ -698,48 +698,57 @@ h1, h2, h3, h4, h5, h6 {
   /* Landing Page Mobile Refinement */
   .landing-hero {
     flex: initial !important;
-    justify-content: flex-start !important;
-    padding: var(--space-xl) var(--space-base) 0 !important;
+    justify-content: center !important;
+    padding: var(--space-md) var(--space-base) !important;
   }
   .landing-logo-container {
-    padding: var(--space-md) !important;
-    margin-bottom: var(--space-md) !important;
+    padding: 8px !important;
+    margin-bottom: var(--space-sm) !important;
   }
   .landing-logo {
-    width: 48px !important;
-    height: 48px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
   .landing-title {
-    font-size: 1.85rem !important;
+    font-size: 1.75rem !important;
     margin-top: 0 !important;
+    margin-bottom: 2px !important;
   }
   .landing-subtitle {
-    font-size: var(--font-size-sm) !important;
+    font-size: 12px !important;
     margin-bottom: var(--space-md) !important;
   }
   .landing-select-wrapper {
-    margin-top: var(--space-md) !important;
+    margin-top: var(--space-sm) !important;
   }
   .landing-select-wrapper select {
-    height: 48px !important;
+    height: 44px !important;
   }
   .landing-cta {
-    padding: 14px !important;
+    padding: 12px !important;
     margin-top: var(--space-md) !important;
   }
   .landing-footer {
-    padding: var(--space-md) var(--space-base) var(--space-2xl) !important;
-    margin-top: var(--space-xl) !important;
+    padding: var(--space-md) var(--space-base) !important;
+    margin-top: var(--space-md) !important;
+    border-top: none !important;
   }
   .landing-footer-inner {
     gap: var(--space-md) !important;
+    justify-content: center !important;
   }
   .landing-footer h4 {
-    margin-bottom: 4px !important;
-    font-size: 13px !important;
+    margin-bottom: 2px !important;
+    font-size: 12px !important;
+    text-align: center;
   }
   .landing-footer a {
-    font-size: 11px !important;
+    font-size: 10px !important;
+    text-align: center;
+  }
+  .landing-page {
+    justify-content: center !important;
+    gap: var(--space-md);
   }
 }
 
