@@ -60,20 +60,27 @@ function renderMenu() {
           </div>
         </header>
 
-        <div class="menu-search-container" style="padding: var(--space-md) var(--space-base); max-width: 800px; margin: 0 auto;">
-          <div style="position: relative; margin-bottom: var(--space-md);">
-            <input type="text" class="form-input" id="menu-search" placeholder="Search menu items..." style="border-radius: var(--radius-full); padding-left: 20px; padding-right: 48px; height: 48px; font-size: 15px; border: 1.5px solid var(--border-color); background: #fff;" />
-            <button id="clear-search" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: #f0f0f0; border: none; width: 26px; height: 26px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; color: #777; font-size: 10px; z-index: 5;">✕</button>
+        <div class="search-filter-container">
+          <div class="search-box-wrapper">
+            <span class="search-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input type="text" id="menu-search" class="search-input" placeholder="Search menu items..." autocomplete="off" />
+            <button id="clear-search" class="clear-search-btn">✕</button>
           </div>
           
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <select id="sort-select" class="form-input" style="flex: 1; height: 36px; padding: 0 30px 0 10px; font-size: 13px; font-weight: 500; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); cursor: pointer;">
-              <option value="default">Default</option>
-              <option value="a-z">A to Z</option>
-              <option value="z-a">Z to A</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-            </select>
+          <div class="filter-btn-wrapper">
+            <button id="filter-btn" class="filter-trigger-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span>Filters</span>
+            </button>
+            <div id="filter-dropdown" class="filter-options-dropdown" style="display: none;">
+              <div class="filter-option" data-sort="default">Default</div>
+              <div class="filter-option" data-sort="a-z">A to Z</div>
+              <div class="filter-option" data-sort="z-a">Z to A</div>
+              <div class="filter-option" data-sort="price-low">Price: Low to High</div>
+              <div class="filter-option" data-sort="price-high">Price: High to Low</div>
+            </div>
           </div>
         </div>
 
@@ -311,18 +318,39 @@ function renderMenu() {
     renderMenuItems();
   });
 
-  // Sort dropdown
-  document.getElementById('sort-select').addEventListener('change', (e) => {
-    activeSort = e.target.value;
-    renderMenuItems();
-  });
+  // Filter dropdown toggle
+  const filterBtn = document.getElementById('filter-btn');
+  const filterDropdown = document.getElementById('filter-dropdown');
+  if (filterBtn && filterDropdown) {
+    filterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = filterDropdown.style.display === 'block';
+      filterDropdown.style.display = isVisible ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', () => {
+      filterDropdown.style.display = 'none';
+    });
+
+    filterDropdown.addEventListener('click', (e) => {
+      const option = e.target.closest('.filter-option');
+      if (option) {
+        activeSort = option.dataset.sort;
+        document.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+        option.classList.add('active');
+        renderMenuItems();
+      }
+    });
+  }
 
   // Search input
   const searchInput = document.getElementById('menu-search');
-  searchInput.addEventListener('input', Utils.debounce((e) => {
-    searchQuery = e.target.value.trim();
-    renderMenuItems();
-  }, 200));
+  if (searchInput) {
+    searchInput.addEventListener('input', Utils.debounce((e) => {
+      searchQuery = e.target.value.trim();
+      renderMenuItems();
+    }, 200));
+  }
 
   // Clear search
   document.getElementById('clear-search').addEventListener('click', () => {
