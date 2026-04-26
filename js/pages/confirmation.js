@@ -9,10 +9,15 @@ function renderConfirmation() {
 
   Store.updateSession({ currentStep: 'confirmation' });
 
+  const sessionOrders = Array.isArray(session.orders) ? session.orders : [];
   const tableNum = Utils.getTableNumber(session.tableId);
-  const lastOrderId = session.orders[session.orders.length - 1];
-  const lastOrder = Store.get('orders').find(o => o.id === lastOrderId);
+  const lastOrderId = sessionOrders[sessionOrders.length - 1];
+  const allOrders = Store.get('orders') || [];
+  const lastOrder = allOrders.find(o => String(o.id) === String(lastOrderId));
   const menuItems = Store.get('menuItems') || [];
+  const orderIdDisplay = lastOrder
+    ? `#${String(lastOrder.id).replace(/^ord-/, '')}`
+    : '#---';
 
   // Calculate totals for the last order
   let subtotal = 0;
@@ -108,7 +113,7 @@ function renderConfirmation() {
             <span class="confirm-id-label">ORDER ID</span>
             <div class="confirm-id-number">
               <span class="confirm-id-decor">🍽️</span>
-              #${lastOrderId ? lastOrderId.replace('ord-', '') : '---'}
+              ${orderIdDisplay}
               <span class="confirm-id-decor">🍽️</span>
             </div>
           </div>
@@ -206,7 +211,14 @@ function renderConfirmation() {
   `;
 
   document.getElementById('back-to-menu').addEventListener('click', () => Router.navigate('/menu'));
-  document.getElementById('go-to-payment').addEventListener('click', () => Router.navigate('/payment'));
+  document.getElementById('go-to-payment').addEventListener('click', () => {
+    if (!sessionOrders.length) {
+      Toast.error('No order found yet. Please place an order first.');
+      Router.navigate('/menu');
+      return;
+    }
+    Router.navigate('/payment');
+  });
 }
 
 

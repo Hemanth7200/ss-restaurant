@@ -441,19 +441,34 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ---- Confirmation Page (Redesigned) ---- */
 .confirm-wrapper {
-  max-width: 480px;
+  max-width: 460px;
   margin: 0 auto;
-  padding: var(--space-base);
+  padding: 12px;
   padding-bottom: var(--space-2xl);
+  background: #fffdf9;
+  border-radius: 28px;
+  border: 1px solid #f3e6d9;
+  box-shadow: 0 10px 30px rgba(160, 95, 35, 0.08);
 }
 
 .confirm-hero {
   background: linear-gradient(135deg, #D4751E 0%, #C76A1C 60%, #a85515 100%);
-  border-radius: 20px 20px 0 0;
-  padding: 32px 20px 48px;
+  border-radius: 20px 20px 28px 28px;
+  padding: 28px 20px 54px;
   text-align: center;
   position: relative;
   overflow: hidden;
+}
+
+.confirm-hero::after {
+  content: "";
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: -42px;
+  height: 84px;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background: #fffdf9;
 }
 
 .confirm-hero-pattern {
@@ -480,6 +495,7 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
   top: 32px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 2;
 }
 
 .confirm-title-section {
@@ -500,12 +516,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .confirm-id-card {
-  margin: 24px auto 0;
+  margin: 22px auto 0;
   text-align: center;
-  border: 1.5px dashed var(--color-primary);
+  border: 1.5px dashed #f4c29a;
   border-radius: 16px;
-  padding: 16px 24px;
+  padding: 14px 24px;
   max-width: 260px;
+  background: #fff;
 }
 
 .confirm-id-label {
@@ -534,18 +551,25 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-top: 16px;
+  margin-top: 10px;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+  background: #fff5eb;
+  border: 1px solid #f5d8bd;
+  border-radius: 999px;
+  width: fit-content;
+  padding: 8px 14px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .confirm-details-card {
   background: white;
-  border: 1px solid var(--border-color);
+  border: 1px solid #efe4d8;
   border-radius: 16px;
-  padding: 20px;
-  margin-top: 24px;
+  padding: 16px;
+  margin-top: 18px;
 }
 
 .confirm-details-header {
@@ -629,12 +653,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .confirm-grand-total {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid #efe4d8;
   margin-top: 8px;
-  padding-top: 10px;
+  padding: 10px 8px 0;
   font-size: 15px;
   font-weight: 800;
   color: var(--text-primary);
+  background: #fff8f1;
+  border-radius: 10px;
 }
 
 .confirm-grand-total span:last-child {
@@ -643,10 +669,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .confirm-actions {
-  margin-top: 24px;
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .confirm-btn-primary {
@@ -655,7 +681,7 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -677,8 +703,8 @@ h1, h2, h3, h4, h5, h6 {
   padding: 14px;
   background: white;
   color: var(--text-primary);
-  border: 1.5px solid var(--border-color);
-  border-radius: 14px;
+  border: 1.5px solid #eadbcf;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -699,10 +725,11 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-top: 28px;
-  padding: 16px;
-  background: #faf6f2;
-  border-radius: 14px;
+  margin-top: 16px;
+  padding: 14px;
+  background: #f6fbf2;
+  border: 1px solid #d9ecce;
+  border-radius: 12px;
 }
 
 .confirm-thankyou-icon {
@@ -727,9 +754,9 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #efe4d8;
 }
 
 .confirm-feature {
