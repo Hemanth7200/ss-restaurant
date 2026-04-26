@@ -697,7 +697,9 @@ h1, h2, h3, h4, h5, h6 {
 
   /* Landing Page Mobile Refinement */
   .landing-hero {
-    padding: var(--space-lg) var(--space-base);
+    flex: initial !important;
+    justify-content: flex-start !important;
+    padding: var(--space-xl) var(--space-base) 0 !important;
   }
   .landing-logo-container {
     padding: var(--space-md) !important;
@@ -709,12 +711,14 @@ h1, h2, h3, h4, h5, h6 {
   }
   .landing-title {
     font-size: 1.85rem !important;
+    margin-top: 0 !important;
   }
   .landing-subtitle {
     font-size: var(--font-size-sm) !important;
+    margin-bottom: var(--space-md) !important;
   }
   .landing-select-wrapper {
-    margin-top: var(--space-lg) !important;
+    margin-top: var(--space-md) !important;
   }
   .landing-select-wrapper select {
     height: 48px !important;
@@ -724,7 +728,8 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: var(--space-md) !important;
   }
   .landing-footer {
-    padding: var(--space-lg) var(--space-base) !important;
+    padding: var(--space-md) var(--space-base) var(--space-2xl) !important;
+    margin-top: var(--space-xl) !important;
   }
   .landing-footer-inner {
     gap: var(--space-md) !important;
