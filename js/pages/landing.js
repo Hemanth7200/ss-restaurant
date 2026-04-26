@@ -63,7 +63,7 @@ function renderLanding() {
           <img src="assets/logo.png" alt="SS Restaurant Logo" class="landing-logo" style="width: 80px; height: 80px;" />
         </div>
         <h1 class="landing-title" style="color: var(--color-primary); font-family: var(--font-family-heading); font-size: 3rem; margin-bottom: 0;">SS Restaurant</h1>
-        <p class="landing-subtitle" style="color: var(--text-secondary); font-size: var(--font-size-md); font-weight: 500; opacity: 0.8;">Premium Botanical Dining</p>
+        <p class="landing-subtitle" style="color: var(--text-secondary); font-size: var(--font-size-md); font-weight: 500; opacity: 0.8;">Premium Dining Experience</p>
         
         <div class="landing-select-wrapper" style="max-width: 360px; margin: var(--space-4xl) auto 0;">
           <label class="form-label" style="text-align: left; display: block; margin-bottom: var(--space-sm); font-weight: 600; color: var(--color-primary); font-size: var(--font-size-sm); letter-spacing: 0.05em; text-transform: uppercase;">Where are you seated?</label>
