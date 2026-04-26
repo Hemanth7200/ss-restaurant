@@ -635,34 +635,52 @@ const Store = {
 
   // ---- Payment Helpers ----
   confirmPayment(sessionId) {
-    // If it's the current session
-    const session = this._state.currentSession;
-    let tableId = null;
+    // === AUTO CLOSE SESSION ===
+    // Payment confirmed → close session → archive bill → clear cart → unlock table
     
+    let tableId = null;
+
+    // 1. If this is the current tab's session, mark it paid
+    const session = this._state.currentSession;
     if (session && session.id === sessionId) {
       session.paymentStatus = 'confirmed';
       session.paid = true;
       tableId = session.tableId;
       this.set('currentSession', session);
     }
-    // Update in sessions array if exists
+
+    // 2. Archive the session as 'closed' in the sessions array
     if (this._state.sessions) {
       const s = this._state.sessions.find(s => s.id === sessionId);
       if (s) {
-        s.status = 'paid';
+        s.status = 'closed';
+        s.paymentStatus = 'confirmed';
+        s.paid = true;
+        s.closedAt = new Date().toISOString();
         tableId = tableId || s.tableId;
       }
     }
+
     this._persist();
     this._notify('currentSession');
-    
-    // Sync to DB
-    DB.updateSession(sessionId, { status: 'paid' });
-    
-    // Release the table automatically
-    if (tableId) {
-      this.releaseTable(tableId);
+    this._notify('sessions');
+
+    // 3. Sync to DB — mark session as paid + closed
+    if (DB_ENABLED) {
+      DB.updateSession(sessionId, { status: 'paid', paymentMethod: this._state.currentSession?.paymentMethod || 'cash' });
     }
+
+    // 4. Release the table automatically → available for next customer
+    if (tableId) {
+      this.update('tables', tables =>
+        tables.map(t => t.id === tableId ? { ...t, status: 'available' } : t)
+      );
+      if (DB_ENABLED) {
+        DB.updateTableStatus(tableId, 'available');
+      }
+    }
+
+    console.log(`✅ Auto-closed session ${sessionId} — table released`);
   },
 
   rejectPayment(sessionId) {

@@ -172,8 +172,17 @@ function showTableModal(editId) {
 }
 
 function adminReleaseTable(id) {
+  // Close any active sessions for this table
+  const sessions = Store.get('sessions') || [];
+  sessions.forEach(s => {
+    if (s.tableId === id && s.status !== 'paid' && s.status !== 'closed') {
+      s.status = 'closed';
+      s.closedAt = new Date().toISOString();
+      if (DB_ENABLED) DB.updateSession(s.id, { status: 'closed' });
+    }
+  });
+  Store.set('sessions', sessions);
   Store.releaseTable(id);
-  Toast.success('Table released');
   renderAdminTables();
 }
 
