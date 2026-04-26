@@ -62,7 +62,7 @@ function renderMenu() {
         <div class="menu-search-container" style="padding: var(--space-md) var(--space-base); max-width: 800px; margin: 0 auto;">
           <div style="position: relative; margin-bottom: var(--space-md);">
             <input type="text" class="form-input" id="menu-search" placeholder="Search dishes..." style="border-radius: var(--radius-lg); padding-left: 16px; padding-right: 45px; height: 48px; font-size: 15px; border: 1.5px solid var(--border-color); background: white;" />
-            <button id="clear-search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--border-color); border: none; width: 24px; height: 24px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; color: #555; font-size: 12px; font-weight: bold; transition: all 0.2s; line-height: 1;">✕</button>
+            <button id="clear-search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #f0f0f0; border: none; width: 26px; height: 26px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; color: #777; font-size: 10px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.05); z-index: 5;" onmouseover="this.style.background='#e0e0e0'; this.style.color='#333'; this.style.transform='translateY(-50%) scale(1.08)';" onmouseout="this.style.background='#f0f0f0'; this.style.color='#777'; this.style.transform='translateY(-50%) scale(1.0)';">✕</button>
           </div>
           
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -189,13 +189,24 @@ function renderMenu() {
       items = items.filter(m => m.category === activeCategory);
     }
 
-    // 2. Filter by Search — always use .includes() for all lengths
+    // 2. Filter by Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase().trim();
-      items = items.filter(m =>
-        m.name.toLowerCase().includes(q) ||
-        (m.description && m.description.toLowerCase().includes(q))
-      );
+      
+      if (q.length === 1) {
+        // Very strict for single letter: Only name starts with
+        items = items.filter(m => m.name.toLowerCase().startsWith(q));
+      } else if (q.length < 3) {
+        // Strict for 2 letters: Only in names
+        items = items.filter(m => m.name.toLowerCase().includes(q));
+      } else {
+        // Normal for 3+ letters: Name or description
+        items = items.filter(m =>
+          m.name.toLowerCase().includes(q) ||
+          (m.description && m.description.toLowerCase().includes(q))
+        );
+      }
+      
       // Show clear button
       if (clearBtn) clearBtn.style.display = 'flex';
     } else {
