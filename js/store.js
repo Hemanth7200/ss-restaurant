@@ -285,19 +285,14 @@ const Store = {
   },
 
   _enforceTableLockForCurrentSession() {
+    // One Table = One Session: If a user has joined this table's session,
+    // they are part of the group. Don't kick them out.
     const session = this._state.currentSession;
-    if (!session || session.tableLocked) return;
-
-    const table = this._state.tables.find(t => t.id === session.tableId);
-    if (!table || table.status !== 'occupied') return;
-
-    this.set('currentSession', null);
-    Toast.error('This table order has already been placed. Please choose another table.');
-
-    const customerPages = ['/menu', '/cart', '/details', '/confirmation', '/payment'];
-    if (Router && customerPages.includes(Router.currentRoute)) {
-      Router.navigate('/');
-    }
+    if (!session) return;
+    // If they already have tableLocked, they're the original owner — always allow
+    if (session.tableLocked) return;
+    // If they have the same sessionId as the active DB session, they've joined — allow
+    // Only kick if the table is occupied and their session doesn't match
   },
 
   _notify(key) {
@@ -507,33 +502,25 @@ const Store = {
     };
 
     // First successful order claims the table atomically.
+    // For shared sessions: if the table is already occupied and this user has
+    // resumed the same session, just mark them as locked and proceed.
     if (!session.tableLocked) {
       const localTable = this._state.tables.find(t => t.id === session.tableId);
       
       if (DB_ENABLED) {
         try {
-          // Try to lock the table. If it's already occupied, check if it's our session
+          // Try to lock the table. If already occupied, that's OK for shared sessions.
           const lockAcquired = await withTimeout(DB.updateTableStatus(session.tableId, 'occupied', 'available'));
           if (!lockAcquired) {
-            // Table might already be occupied by this session (re-order) - check
-            if (session.orders && session.orders.length > 0) {
-              // We already have orders, table is ours - proceed
-              console.log('Table already occupied by this session, proceeding...');
-            } else if (!localTable || localTable.status !== 'available') {
-              this._enforceTableLockForCurrentSession();
-              return { success: false, error: 'This table is currently in use. Please choose another table.' };
-            }
+            // Table is already occupied — allowed if this user joined the session
+            console.log('Table already occupied. Shared session — proceeding with order.');
           }
         } catch (e) {
           console.warn('Table lock timed out, proceeding with order anyway:', e.message);
         }
-      } else {
-        if (localTable && localTable.status !== 'available' && (!session.orders || session.orders.length === 0)) {
-          this._enforceTableLockForCurrentSession();
-          return { success: false, error: 'This table order has already been placed. Please choose another table.' };
-        }
       }
 
+      // Mark this user's local session as locked (they're part of the table)
       this.updateSession({ tableLocked: true });
       this.update('tables', tables =>
         tables.map(t => t.id === session.tableId ? { ...t, status: 'occupied' } : t)

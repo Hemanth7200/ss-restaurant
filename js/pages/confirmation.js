@@ -11,49 +11,59 @@ function renderConfirmation() {
 
   const sessionOrders = Array.isArray(session.orders) ? session.orders : [];
   const tableNum = Utils.getTableNumber(session.tableId);
-  const lastOrderId = sessionOrders[sessionOrders.length - 1];
   const allOrders = Store.get('orders') || [];
-  const lastOrder = allOrders.find(o => String(o.id) === String(lastOrderId));
   const menuItems = Store.get('menuItems') || [];
-  const orderIdDisplay = lastOrder
-    ? String(lastOrder.id).replace(/^ord-/, '')
-    : '---';
 
-  // Calculate totals for the last order
-  let subtotal = 0;
-  if (lastOrder) {
-    lastOrder.items.forEach(item => {
-      subtotal += item.price * item.quantity;
+  // ── Merge ALL session orders into one combined bill ──
+  const mergedItems = {};
+  let orderCount = 0;
+  sessionOrders.forEach(orderId => {
+    const order = allOrders.find(o => String(o.id) === String(orderId));
+    if (!order) return;
+    orderCount++;
+    order.items.forEach(item => {
+      const key = item.name;
+      if (mergedItems[key]) {
+        mergedItems[key].quantity += item.quantity;
+      } else {
+        mergedItems[key] = { ...item };
+      }
     });
-  }
+  });
+  const combinedItems = Object.values(mergedItems);
+
+  // Calculate combined totals
+  let subtotal = combinedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = Math.round(subtotal * 0.05);
   const totalAmount = subtotal + tax;
 
-  // Build order items HTML with images
-  let orderItemsHtml = '';
-  if (lastOrder) {
-    orderItemsHtml = lastOrder.items.map(item => {
-      const menuItem = menuItems.find(m => m.name === item.name);
-      const img = menuItem ? menuItem.image : '';
-      const isUrl = img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('assets') || img.startsWith('data:image'));
-      const imgHtml = isUrl
-        ? `<img src="${img}" alt="${Utils.escapeHtml(item.name)}" class="confirm-item-img" />`
-        : `<div class="confirm-item-img confirm-item-emoji">${img || '🍽️'}</div>`;
+  // Show latest order ID
+  const lastOrderId = sessionOrders[sessionOrders.length - 1];
+  const lastOrder = allOrders.find(o => String(o.id) === String(lastOrderId));
+  const orderIdDisplay = lastOrder ? String(lastOrder.id).replace(/^ord-/, '') : '---';
 
-      return `
-        <div class="confirm-order-item">
-          <div class="confirm-item-left">
-            ${imgHtml}
-            <div>
-              <div class="confirm-item-name">${Utils.escapeHtml(item.name)}</div>
-              <div class="confirm-item-qty">x ${item.quantity}</div>
-            </div>
+  // Build combined order items HTML with images
+  const orderItemsHtml = combinedItems.map(item => {
+    const menuItem = menuItems.find(m => m.name === item.name);
+    const img = menuItem ? menuItem.image : '';
+    const isUrl = img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('assets') || img.startsWith('data:image'));
+    const imgHtml = isUrl
+      ? `<img src="${img}" alt="${Utils.escapeHtml(item.name)}" class="confirm-item-img" />`
+      : `<div class="confirm-item-img confirm-item-emoji">${img || '🍽️'}</div>`;
+
+    return `
+      <div class="confirm-order-item">
+        <div class="confirm-item-left">
+          ${imgHtml}
+          <div>
+            <div class="confirm-item-name">${Utils.escapeHtml(item.name)}</div>
+            <div class="confirm-item-qty">x ${item.quantity}</div>
           </div>
-          <div class="confirm-item-price">${Utils.formatPrice(item.price * item.quantity)}</div>
         </div>
-      `;
-    }).join('');
-  }
+        <div class="confirm-item-price">${Utils.formatPrice(item.price * item.quantity)}</div>
+      </div>
+    `;
+  }).join('');
 
   app.innerHTML = `
     <div class="menu-page">
@@ -114,6 +124,7 @@ function renderConfirmation() {
             <div class="confirm-id-number">
               ${orderIdDisplay}
             </div>
+            ${orderCount > 1 ? `<span style="font-size:12px;color:var(--text-muted);margin-top:4px;">${orderCount} orders combined</span>` : ''}
           </div>
 
           <!-- Table Info -->
@@ -125,8 +136,8 @@ function renderConfirmation() {
             Table ${tableNum}
           </div>
 
-          <!-- Order Details Card -->
-          ${lastOrder ? `
+          <!-- Combined Order Details Card -->
+          ${combinedItems.length > 0 ? `
           <div class="confirm-details-card">
             <div class="confirm-details-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -135,7 +146,7 @@ function renderConfirmation() {
                 <rect x="14" y="14" width="7" height="7"/>
                 <rect x="3" y="14" width="7" height="7"/>
               </svg>
-              <span>ORDER DETAILS</span>
+              <span>RUNNING BILL (${orderCount} ${orderCount === 1 ? 'order' : 'orders'})</span>
             </div>
 
             <div class="confirm-items-list">
