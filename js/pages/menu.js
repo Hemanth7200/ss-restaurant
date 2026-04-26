@@ -273,7 +273,6 @@ function renderMenu() {
       const gradient = Utils.getFoodGradient(item.image);
 
       return `
-      return `
         <div class="menu-card" data-id="${item.id}">
           <div class="menu-card-img" onclick="showItemDetails('${item.id}')">
             ${isUrl
