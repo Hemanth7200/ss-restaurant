@@ -341,18 +341,10 @@ const Store = {
       }
     }
 
-    // Allow users to browse a table until first order is placed.
-    // If table is occupied, attempt to resume the active session for that table
+    // Block if table is not available (occupied, blocked, etc.)
     const localTable = this._state.tables.find(t => t.id === tableId);
-    if (localTable && localTable.status === 'occupied') {
-      console.log('🔗 Table is occupied. Attempting to join existing session...');
-      return await this.resumeSessionForTable(tableId);
-    }
-    
-    // If blocked or some other status, then stop
-    if (localTable && localTable.status !== 'available' && localTable.status !== 'occupied') {
-      Toast.error('This table is currently unavailable. Please contact staff.');
-      return null;
+    if (localTable && localTable.status !== 'available') {
+      return null; // Landing page will redirect to /menuitems
     }
 
     const sessionId = 'sess-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();

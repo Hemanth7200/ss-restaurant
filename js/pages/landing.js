@@ -32,17 +32,22 @@ function renderLanding() {
           return;
         }
       }
+
+      // If table is occupied → redirect to View Menu Only page
+      if (table.status === 'occupied') {
+        Router.navigate('/menuitems?table=' + table.number);
+        return;
+      }
       
-      // Render a loading state while attempting to lock the table atomically
+      // Table is available → start a new session
       app.innerHTML = '<div style="display:flex;min-height:100vh;align-items:center;justify-content:center"><div class="spinner lg"></div></div>';
       
       Store.startSession(table.id).then(session => {
         if (session) {
           Router.navigate('/menu');
         } else {
-          // If start session failed (e.g. table occupied by someone else), reset URL and render landing
-          window.location.hash = '#/';
-          renderLanding();
+          // If start session failed, redirect to view-only menu
+          Router.navigate('/menuitems?table=' + table.number);
         }
       });
       return;
