@@ -95,7 +95,7 @@ const Store = {
     if (!this._state.sessions) this._state.sessions = [];
     if (!this._state.reviews) this._state.reviews = [];
     if (this._state.nextOrderId === undefined) this._state.nextOrderId = STARTING_ORDER_ID;
-    if (this._state.nextSessionNumber === undefined) this._state.nextSessionNumber = 1;
+    if (this._state.nextMainOrderNumber === undefined) this._state.nextMainOrderNumber = 101;
     if (!this._state.currentSession) this._state.currentSession = null;
     if (!this._state.adminAuth) this._state.adminAuth = null;
     if (!this._state.complaints) this._state.complaints = [];
@@ -323,37 +323,43 @@ const Store = {
   async startSession(tableId) {
     const currentSession = this.getCurrentSession();
     
-    // If we have an active session for this exact table, just return it
+    // If we have an active session for THIS exact table, just return it
     if (currentSession && currentSession.tableId === tableId) {
       return currentSession;
     }
 
     // If they have an active session for a DIFFERENT table...
     if (currentSession && currentSession.tableId !== tableId) {
-      // If they haven't placed any orders yet, allow them to switch tables!
       if (currentSession.orders.length === 0) {
         console.log('🔄 Switching table from', currentSession.tableId, 'to', tableId);
-        // We will create a new session below
       } else {
-        // They have real orders, don't let them switch without completing/paying
         Toast.error('You already have an active order for Table ' + Utils.getTableNumber(currentSession.tableId) + '. Please complete it first.');
         return null;
       }
     }
 
-    // Block if table is not available (occupied, blocked, etc.)
     const localTable = this._state.tables.find(t => t.id === tableId);
-    if (localTable && localTable.status !== 'available') {
-      return null; // Landing page will redirect to /menuitems
+
+    // If table is OCCUPIED → join the active session (multi-device ordering)
+    if (localTable && localTable.status === 'occupied') {
+      console.log('🔗 Table occupied — joining active session...');
+      return await this.resumeSessionForTable(tableId);
     }
 
+    // If blocked, stop
+    if (localTable && localTable.status === 'blocked') {
+      Toast.error('This table is currently unavailable.');
+      return null;
+    }
+
+    // Table is AVAILABLE → create a brand new session with new main order number
     const sessionId = 'sess-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
-    const sessionNumber = this._state.nextSessionNumber || 1;
-    this.update('nextSessionNumber', n => (n || 1) + 1);
+    const mainOrderNumber = this._state.nextMainOrderNumber || 101;
+    this.update('nextMainOrderNumber', n => (n || 101) + 1);
 
     const session = {
       id: sessionId,
-      sessionNumber: sessionNumber,
+      mainOrderNumber: mainOrderNumber,
       tableId: tableId,
       cart: [],
       orders: [],
@@ -367,7 +373,6 @@ const Store = {
     };
     
     this.set('currentSession', session);
-    // Create session in DB
     await DB.createSession(session);
     return session;
   },
@@ -399,14 +404,11 @@ const Store = {
 
     const session = {
       id: dbSession.id,
-      sessionNumber: dbSession.sessionNumber || null,
+      mainOrderNumber: dbSession.mainOrderNumber || null,
       tableId: dbSession.tableId,
       cart: [],
       orders: sessionOrders,
-      customerInfo: dbSession.customerName || dbSession.customerPhone ? {
-        name: dbSession.customerName || '',
-        phone: dbSession.customerPhone || ''
-      } : null,
+      customerInfo: null, // Each device enters their own info
       currentStep: 'menu',
       startedAt: dbSession.startedAt,
       status: dbSession.status || 'active',
@@ -553,22 +555,18 @@ const Store = {
     const gst = Number((subtotal * GST_RATE).toFixed(2));
     const total = Number((subtotal + gst).toFixed(2));
     
-    let orderId = this._state.nextOrderId;
+    // ── Generate Order ID: XXXNN (XXX = main order, NN = session within) ──
+    const mainNum = session.mainOrderNumber || 101;
+    const existingSessionOrders = this._state.orders.filter(o => o.sessionId === session.id);
+    const sessionSeq = existingSessionOrders.length + 1; // 1, 2, 3...
+    const orderId = mainNum * 100 + sessionSeq; // e.g. 10101, 10102, 10103
     let finalOrder = null;
-
-    // Get next order ID from DB if available
-    if (DB_ENABLED) {
-      try {
-        const dbNextId = await withTimeout(DB.getNextOrderId(), 5000);
-        if (dbNextId) orderId = dbNextId;
-      } catch (e) {
-        console.warn('getNextOrderId timed out, using local ID:', orderId);
-      }
-    }
 
     const order = {
       id: orderId,
       sessionId: session.id,
+      mainOrderNumber: mainNum,
+      sessionSeq: sessionSeq,
       tableId: session.tableId,
       items: [...session.cart],
       customerName: customerInfo.name,
@@ -581,32 +579,23 @@ const Store = {
       createdAt: new Date().toISOString()
     };
 
-    // Try to save to DB, but don't block on failure
+    // Try to save to DB
     if (DB_ENABLED) {
       try {
         const orderResult = await withTimeout(DB.createOrder(order), 8000);
         if (orderResult === true || (orderResult && orderResult.success)) {
           finalOrder = order;
         } else if (orderResult && orderResult.code === '23505') {
-          // Duplicate ID - increment and try once more
           order.id = orderId + 1;
+          order.sessionSeq = sessionSeq + 1;
           try {
             const retry = await withTimeout(DB.createOrder(order), 5000);
-            if (retry === true || (retry && retry.success)) {
-              finalOrder = order;
-            }
-          } catch (e2) {
-            console.warn('DB retry failed, saving locally');
-            finalOrder = order;
-          }
+            if (retry === true || (retry && retry.success)) finalOrder = order;
+          } catch (e2) { finalOrder = order; }
         } else {
-          // DB error but we still want to place the order locally
-          console.warn('DB createOrder failed, saving locally:', orderResult);
           finalOrder = order;
         }
       } catch (e) {
-        // Timeout or network error - save locally anyway
-        console.warn('DB createOrder timed out, saving locally:', e.message);
         finalOrder = order;
       }
     } else {
@@ -614,7 +603,6 @@ const Store = {
     }
 
     if (finalOrder) {
-      // Update local state
       this.update('orders', orders => [...orders, finalOrder]);
       this.update('nextOrderId', id => Math.max(id, finalOrder.id + 1));
       

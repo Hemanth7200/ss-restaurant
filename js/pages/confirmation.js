@@ -37,10 +37,11 @@ function renderConfirmation() {
   const tax = Math.round(subtotal * 0.05);
   const totalAmount = subtotal + tax;
 
-  // Show latest order ID
+  // Show main order number and latest order ID
+  const mainOrderNum = session.mainOrderNumber || '---';
   const lastOrderId = sessionOrders[sessionOrders.length - 1];
   const lastOrder = allOrders.find(o => String(o.id) === String(lastOrderId));
-  const orderIdDisplay = lastOrder ? String(lastOrder.id).replace(/^ord-/, '') : '---';
+  const orderIdDisplay = lastOrder ? String(lastOrder.id) : '---';
 
   // Build combined order items HTML with images
   const orderItemsHtml = combinedItems.map(item => {
@@ -120,11 +121,11 @@ function renderConfirmation() {
 
           <!-- Order ID Card -->
           <div class="confirm-id-card">
-            <span class="confirm-id-label">ORDER ID</span>
+            <span class="confirm-id-label">ORDER #${mainOrderNum}</span>
             <div class="confirm-id-number">
               ${orderIdDisplay}
             </div>
-            ${orderCount > 1 ? `<span style="font-size:12px;color:var(--text-muted);margin-top:4px;">${orderCount} orders combined</span>` : ''}
+            ${orderCount > 1 ? `<span style="font-size:12px;color:var(--text-muted);margin-top:4px;">${orderCount} sessions combined</span>` : '<span style="font-size:12px;color:var(--text-muted);margin-top:4px;">Session 01</span>'}
           </div>
 
           <!-- Table Info -->
@@ -133,7 +134,7 @@ function renderConfirmation() {
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
               <circle cx="12" cy="10" r="3"/>
             </svg>
-            Table ${tableNum} ${session.sessionNumber ? `<span style="margin-left:8px;font-weight:700;color:var(--color-primary);">• ${Utils.formatSessionNumber(session.sessionNumber)}</span>` : ''}
+            Table ${tableNum} <span style="margin-left:8px;font-weight:700;color:var(--color-primary);">• Order #${mainOrderNum}</span>
           </div>
 
           <!-- Combined Order Details Card -->

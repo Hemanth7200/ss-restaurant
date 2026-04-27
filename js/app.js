@@ -22,7 +22,6 @@
   Router.register('/info', renderTableInfo);
   Router.register('/call', renderCallWaiter);
   Router.register('/review', renderReview);
-  Router.register('/menuitems', renderMenuItems);
 
   // Admin routes
   Router.register('/admin', renderAdminLogin);

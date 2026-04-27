@@ -49,11 +49,6 @@ const Utils = {
     return table ? table.number : '?';
   },
 
-  formatSessionNumber(num) {
-    if (!num) return '---';
-    return 'S-' + String(num).padStart(3, '0');
-  },
-
   getStatusBadgeClass(status) {
     const map = {
       'new': 'badge-info',

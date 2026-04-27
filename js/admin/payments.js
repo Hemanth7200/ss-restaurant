@@ -68,14 +68,14 @@ function renderAdminPayments() {
             ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${methodColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>`
             : `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${methodColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/><path d="M9 8l3-2 3 2"/><path d="M9 12l3 2 3-2"/></svg>`;
 
-          const sessionNum = session.sessionNumber ? Utils.formatSessionNumber(session.sessionNumber) : '';
+          const mainOrderNum = session.mainOrderNumber || '?';
 
           html += `
             <div class="order-card" style="max-width: 600px;">
               <div class="order-card-header">
                 <div>
                   <span style="font-weight: 700; font-size: var(--font-size-lg);">Table ${tableNum}</span>
-                  ${sessionNum ? `<span style="font-size:0.85em;color:var(--color-primary);font-weight:600;margin-left:8px;">${sessionNum}</span>` : ''}
+                  <span style="font-size:0.85em;color:var(--color-primary);font-weight:700;margin-left:8px;">Order #${mainOrderNum}</span>
                   <span class="badge badge-warning" style="margin-left: 10px;">Pending ${isCash ? 'Cash' : 'UPI'}</span>
                 </div>
                 <span class="order-card-time">${Utils.formatTime(session.startedAt)}</span>

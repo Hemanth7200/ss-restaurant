@@ -149,7 +149,17 @@ function renderAdminOrders() {
                 }
               }
 
-              const sessionNum = session && session.sessionNumber ? Utils.formatSessionNumber(session.sessionNumber) : '';
+              // Main order + session info
+              const mainNum = order.mainOrderNumber || '?';
+              const sessSeq = order.sessionSeq || '?';
+              const sessLabel = String(sessSeq).padStart(2, '0');
+
+              // Table lock status
+              const tableData = (Store.get('tables') || []).find(t => t.id === order.tableId);
+              const isLocked = tableData && tableData.status === 'occupied';
+              const lockBadge = isLocked 
+                ? `<span class="badge badge-warning" style="font-size:10px;">🔒 Locked</span>`
+                : `<span class="badge badge-success" style="font-size:10px;">🔓 Free</span>`;
 
               return `
               <div class="order-card">
@@ -167,9 +177,10 @@ function renderAdminOrders() {
                       <span>👤 ${Utils.escapeHtml(order.customerName)}</span>
                       <span style="font-size:0.85em; color:var(--text-muted);">📞 ${Utils.escapeHtml(order.customerPhone || 'N/A')}</span>
                     </span>
-                    <span style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                    <span style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
                       <span>📍 Table ${Utils.getTableNumber(order.tableId)}</span>
-                      ${sessionNum ? `<span style="font-size:0.8em;color:var(--color-primary);font-weight:600;">${sessionNum}</span>` : ''}
+                      <span style="font-size:0.8em;color:var(--color-primary);font-weight:700;">Order #${mainNum} • Session ${sessLabel}</span>
+                      ${lockBadge}
                     </span>
                   </div>
                   <div class="order-items-list">
